@@ -9,8 +9,8 @@ class Aomark_Listings_Filter_Widget extends \Elementor\Widget_Base {
 	public function get_icon(): string { return 'eicon-search'; }
 	public function get_categories(): array { return [ 'aomark-listings' ]; }
 	public function get_keywords(): array { return [ 'aomark', 'listings', 'filter', 'search', 'property' ]; }
-	public function get_style_depends(): array { aomark_listings_register_assets(); return [ 'aomark-listings' ]; }
-	public function get_script_depends(): array { aomark_listings_register_assets(); return [ 'aomark-listings' ]; }
+	public function get_style_depends(): array { return [ 'aomark-listings' ]; }
+	public function get_script_depends(): array { return [ 'aomark-listings' ]; }
 
 	protected function register_controls(): void {
 		$this->start_controls_section(
@@ -117,6 +117,21 @@ class Aomark_Listings_Filter_Widget extends \Elementor\Widget_Base {
 				'multiple'    => true,
 				'label_block' => true,
 				'condition'   => [ 'show_fields' => 'yes' ],
+			]
+		);
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_advanced_connection',
+			[ 'label' => esc_html__( 'Advanced', 'aomark-listings' ) ]
+		);
+		$this->add_control(
+			'connection_id',
+			[
+				'label'       => esc_html__( 'Connection ID', 'aomark-listings' ),
+				'description' => esc_html__( 'Optional. Use the same ID on Listing Results when a page contains more than one listings view.', 'aomark-listings' ),
+				'type'        => \Elementor\Controls_Manager::TEXT,
+				'label_block' => true,
 			]
 		);
 		$this->end_controls_section();
@@ -275,6 +290,13 @@ class Aomark_Listings_Filter_Widget extends \Elementor\Widget_Base {
 		if ( isset( $settings['results_url']['url'] ) ) {
 			$settings['results_url'] = $settings['results_url']['url'];
 		}
-		echo aomark_listings_render_filter( $settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$connection_id = sanitize_key( $settings['connection_id'] ?? '' );
+		$model          = aomark_listings_get_model( $settings['model_id'] ?? '' );
+		$model_id       = $model ? $model['id'] : sanitize_key( $settings['model_id'] ?? '' );
+		?>
+		<div class="aomark-listings-component aomark-listings-component--filter" data-aomark-component="filter" data-aomark-connection="<?php echo esc_attr( $connection_id ); ?>" data-model-id="<?php echo esc_attr( $model_id ); ?>">
+			<?php echo aomark_listings_render_filter( $settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		</div>
+		<?php
 	}
 }

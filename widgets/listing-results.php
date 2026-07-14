@@ -9,8 +9,8 @@ class Aomark_Listings_Results_Widget extends \Elementor\Widget_Base {
 	public function get_icon(): string { return 'eicon-posts-grid'; }
 	public function get_categories(): array { return [ 'aomark-listings' ]; }
 	public function get_keywords(): array { return [ 'aomark', 'listings', 'results', 'query', 'cards', 'properties' ]; }
-	public function get_style_depends(): array { aomark_listings_register_assets(); return [ 'aomark-listings' ]; }
-	public function get_script_depends(): array { aomark_listings_register_assets(); return [ 'aomark-listings' ]; }
+	public function get_style_depends(): array { return [ 'aomark-listings' ]; }
+	public function get_script_depends(): array { return [ 'aomark-listings' ]; }
 
 	protected function register_controls(): void {
 		aomark_listings_add_query_controls( $this );
@@ -72,6 +72,18 @@ class Aomark_Listings_Results_Widget extends \Elementor\Widget_Base {
 		);
 		$this->add_control( 'show_button', [ 'label' => esc_html__( 'Details Button', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes' ] );
 		$this->add_control( 'button_text', [ 'label' => esc_html__( 'Button Text', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => esc_html__( 'View Details', 'aomark-listings' ), 'condition' => [ 'show_button' => 'yes' ] ] );
+		$this->end_controls_section();
+
+		$this->start_controls_section( 'section_advanced_connection', [ 'label' => esc_html__( 'Advanced', 'aomark-listings' ) ] );
+		$this->add_control(
+			'connection_id',
+			[
+				'label'       => esc_html__( 'Connection ID', 'aomark-listings' ),
+				'description' => esc_html__( 'Optional. Use the same ID on a Filter and Map when a page contains more than one listings view.', 'aomark-listings' ),
+				'type'        => \Elementor\Controls_Manager::TEXT,
+				'label_block' => true,
+			]
+		);
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_style_layout', [ 'label' => esc_html__( 'Layout', 'aomark-listings' ), 'tab' => \Elementor\Controls_Manager::TAB_STYLE ] );
@@ -152,13 +164,13 @@ class Aomark_Listings_Results_Widget extends \Elementor\Widget_Base {
 		$this->start_controls_section( 'section_style_pagination', [ 'label' => esc_html__( 'Pagination', 'aomark-listings' ), 'tab' => \Elementor\Controls_Manager::TAB_STYLE, 'condition' => [ 'pagination' => 'numbered' ] ] );
 		$this->add_responsive_control( 'pagination_gap', [ 'label' => esc_html__( 'Gap', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SLIDER, 'size_units' => [ 'px', 'em' ], 'range' => [ 'px' => [ 'min' => 0, 'max' => 40 ] ], 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination' => 'gap: {{SIZE}}{{UNIT}};' ] ] );
 		$this->add_responsive_control( 'pagination_spacing', [ 'label' => esc_html__( 'Top Spacing', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SLIDER, 'size_units' => [ 'px', 'em' ], 'range' => [ 'px' => [ 'min' => 0, 'max' => 100 ] ], 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination' => 'margin-top: {{SIZE}}{{UNIT}};' ] ] );
-		$this->add_group_control( \Elementor\Group_Control_Typography::get_type(), [ 'name' => 'pagination_typography', 'selector' => '{{WRAPPER}} .aomark-listings-pagination button' ] );
-		$this->add_control( 'pagination_color', [ 'label' => esc_html__( 'Text Color', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination button' => 'color: {{VALUE}};' ] ] );
-		$this->add_control( 'pagination_background', [ 'label' => esc_html__( 'Background', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination button' => 'background-color: {{VALUE}};' ] ] );
-		$this->add_control( 'pagination_border_color', [ 'label' => esc_html__( 'Border Color', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination button' => 'border-color: {{VALUE}};' ] ] );
-		$this->add_control( 'pagination_active_color', [ 'label' => esc_html__( 'Active Text', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination button.is-active, {{WRAPPER}} .aomark-listings-pagination button:not(:disabled):hover' => 'color: {{VALUE}};' ] ] );
-		$this->add_control( 'pagination_active_background', [ 'label' => esc_html__( 'Active Background', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination button.is-active, {{WRAPPER}} .aomark-listings-pagination button:not(:disabled):hover' => 'background-color: {{VALUE}}; border-color: {{VALUE}};' ] ] );
-		$this->add_responsive_control( 'pagination_radius', [ 'label' => esc_html__( 'Border Radius', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::DIMENSIONS, 'size_units' => [ 'px', '%', 'em' ], 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination button' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ] ] );
+		$this->add_group_control( \Elementor\Group_Control_Typography::get_type(), [ 'name' => 'pagination_typography', 'selector' => '{{WRAPPER}} .aomark-listings-pagination :is(a, button, span)' ] );
+		$this->add_control( 'pagination_color', [ 'label' => esc_html__( 'Text Color', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination :is(a, button, span)' => 'color: {{VALUE}};' ] ] );
+		$this->add_control( 'pagination_background', [ 'label' => esc_html__( 'Background', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination :is(a, button, span)' => 'background-color: {{VALUE}};' ] ] );
+		$this->add_control( 'pagination_border_color', [ 'label' => esc_html__( 'Border Color', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination :is(a, button, span)' => 'border-color: {{VALUE}};' ] ] );
+		$this->add_control( 'pagination_active_color', [ 'label' => esc_html__( 'Active Text', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination .is-active, {{WRAPPER}} .aomark-listings-pagination a:hover' => 'color: {{VALUE}};' ] ] );
+		$this->add_control( 'pagination_active_background', [ 'label' => esc_html__( 'Active Background', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination .is-active, {{WRAPPER}} .aomark-listings-pagination a:hover' => 'background-color: {{VALUE}}; border-color: {{VALUE}};' ] ] );
+		$this->add_responsive_control( 'pagination_radius', [ 'label' => esc_html__( 'Border Radius', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::DIMENSIONS, 'size_units' => [ 'px', '%', 'em' ], 'selectors' => [ '{{WRAPPER}} .aomark-listings-pagination :is(a, button, span)' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ] ] );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_style_empty', [ 'label' => esc_html__( 'Empty & Loading', 'aomark-listings' ), 'tab' => \Elementor\Controls_Manager::TAB_STYLE ] );
@@ -170,6 +182,15 @@ class Aomark_Listings_Results_Widget extends \Elementor\Widget_Base {
 	}
 
 	protected function render(): void {
-		echo aomark_listings_render_results( $this->get_settings_for_display() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$settings      = $this->get_settings_for_display();
+		$connection_id = sanitize_key( $settings['connection_id'] ?? '' );
+		$model          = aomark_listings_get_model( $settings['model_id'] ?? '' );
+		$model_id       = $model ? $model['id'] : sanitize_key( $settings['model_id'] ?? '' );
+		?>
+		<div class="aomark-listings-component aomark-listings-component--results" data-aomark-component="results" data-aomark-connection="<?php echo esc_attr( $connection_id ); ?>" data-model-id="<?php echo esc_attr( $model_id ); ?>">
+			<?php echo aomark_listings_render_results( $settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<div class="aomark-listings-status screen-reader-text" data-aomark-listings-status role="status" aria-live="polite" aria-atomic="true"></div>
+		</div>
+		<?php
 	}
 }

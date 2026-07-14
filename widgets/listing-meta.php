@@ -9,17 +9,16 @@ class Aomark_Listings_Meta_Widget extends \Elementor\Widget_Base {
 	public function get_icon(): string { return 'eicon-info-circle-o'; }
 	public function get_categories(): array { return [ 'aomark-listings' ]; }
 	public function get_keywords(): array { return [ 'aomark', 'listings', 'meta', 'fields', 'details' ]; }
-	public function get_style_depends(): array { aomark_listings_register_assets(); return [ 'aomark-listings' ]; }
+	public function get_style_depends(): array { return [ 'aomark-listings' ]; }
 
 	protected function register_controls(): void {
-		$this->start_controls_section( 'section_meta', [ 'label' => esc_html__( 'Meta', 'aomark-listings' ) ] );
+		$this->start_controls_section( 'section_meta', [ 'label' => esc_html__( 'Content', 'aomark-listings' ) ] );
 		aomark_listings_add_model_control( $this );
-		$this->add_control( 'post_id', [ 'label' => esc_html__( 'Listing ID', 'aomark-listings' ), 'description' => esc_html__( 'Optional. Leave empty to use the current listing.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'min' => 1 ] );
 		$this->add_control(
 			'field_ids',
 			[
 				'label'       => esc_html__( 'Fields', 'aomark-listings' ),
-				'description' => esc_html__( 'Leave empty to use fields marked “Show on cards” in the model.', 'aomark-listings' ),
+				'description' => esc_html__( 'Leave empty to use the listing type’s default display fields (currently fields marked “Show on cards”).', 'aomark-listings' ),
 				'type'        => \Elementor\Controls_Manager::SELECT2,
 				'options'     => aomark_listings_all_field_options(),
 				'multiple'    => true,
@@ -28,8 +27,12 @@ class Aomark_Listings_Meta_Widget extends \Elementor\Widget_Base {
 		);
 		$this->add_control( 'show_labels', [ 'label' => esc_html__( 'Show Labels', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes' ] );
 		$this->add_control( 'label_suffix', [ 'label' => esc_html__( 'Label Suffix', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => '', 'condition' => [ 'show_labels' => 'yes' ] ] );
-		$this->add_control( 'currency', [ 'label' => esc_html__( 'Currency', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => '$' ] );
-		$this->add_control( 'decimals', [ 'label' => esc_html__( 'Decimals', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 0, 'min' => 0, 'max' => 4 ] );
+		$this->end_controls_section();
+
+		$this->start_controls_section( 'section_advanced', [ 'label' => esc_html__( 'Advanced', 'aomark-listings' ) ] );
+		$this->add_control( 'post_id', [ 'label' => esc_html__( 'Preview a Specific Listing ID', 'aomark-listings' ), 'description' => esc_html__( 'Leave empty to use the current listing automatically. Use this only for an editor preview override.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'min' => 1 ] );
+		$this->add_control( 'currency', [ 'label' => esc_html__( 'Price Currency Override', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => '$' ] );
+		$this->add_control( 'decimals', [ 'label' => esc_html__( 'Price Decimals Override', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 0, 'min' => 0, 'max' => 4 ] );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_style_layout', [ 'label' => esc_html__( 'Layout', 'aomark-listings' ), 'tab' => \Elementor\Controls_Manager::TAB_STYLE ] );
@@ -56,6 +59,12 @@ class Aomark_Listings_Meta_Widget extends \Elementor\Widget_Base {
 	}
 
 	protected function render(): void {
-		echo aomark_listings_render_meta( $this->get_settings_for_display() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$settings = $this->get_settings_for_display();
+		$model    = aomark_listings_get_model( sanitize_key( $settings['model_id'] ?? '' ) );
+		if ( ! $model ) {
+			aomark_listings_elementor_editor_notice( __( 'Choose a listing type to preview its detail fields.', 'aomark-listings' ) );
+			return;
+		}
+		echo aomark_listings_render_meta( $settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 }

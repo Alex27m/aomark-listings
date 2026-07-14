@@ -9,26 +9,44 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-function aomark_listings_request_value( $key ) {
+function aomark_listings_request_value( $key, $max_length = 200 ) {
 	if ( ! isset( $_GET[ $key ] ) ) {
 		return '';
 	}
 
 	$value = wp_unslash( $_GET[ $key ] );
 	$value = is_array( $value ) ? reset( $value ) : $value;
+	if ( ! is_scalar( $value ) ) {
+		return '';
+	}
 
-	return sanitize_text_field( $value );
+	$value = sanitize_text_field( (string) $value );
+
+	return substr( $value, 0, max( 1, absint( $max_length ) ) );
 }
 
-function aomark_listings_request_array( $key ) {
+function aomark_listings_request_array( $key, $max_items = 20, $max_length = 100 ) {
 	if ( ! isset( $_GET[ $key ] ) ) {
 		return [];
 	}
 
 	$value = wp_unslash( $_GET[ $key ] );
 	$value = is_array( $value ) ? $value : [ $value ];
+	$value = array_slice( $value, 0, max( 1, absint( $max_items ) ) );
+	$items = [];
 
-	return array_values( array_filter( array_map( 'sanitize_text_field', $value ) ) );
+	foreach ( $value as $item ) {
+		if ( ! is_scalar( $item ) ) {
+			continue;
+		}
+
+		$item = substr( sanitize_text_field( (string) $item ), 0, max( 1, absint( $max_length ) ) );
+		if ( '' !== $item ) {
+			$items[] = $item;
+		}
+	}
+
+	return array_values( array_unique( $items ) );
 }
 
 function aomark_listings_filter_param( $id ) {
@@ -36,20 +54,14 @@ function aomark_listings_filter_param( $id ) {
 }
 
 function aomark_listings_numeric_value( $value ) {
-	$value = trim( (string) $value );
-
-	if ( '' === $value || ! preg_match( '/\d/', $value ) ) {
+	$value = aomark_listings_normalize_numeric_string( $value );
+	if ( '' === $value ) {
 		return null;
 	}
 
-	$value = preg_replace( '/[^\d,.\-]/', '', $value );
-	if ( false !== strpos( $value, ',' ) && false !== strpos( $value, '.' ) ) {
-		$value = str_replace( ',', '', $value );
-	} elseif ( false !== strpos( $value, ',' ) ) {
-		$value = str_replace( ',', '.', $value );
-	}
+	$number = (float) $value;
 
-	return is_numeric( $value ) ? (float) $value : null;
+	return is_finite( $number ) ? $number : null;
 }
 
 function aomark_listings_format_price( $value, $currency = '$', $decimals = 0 ) {
@@ -163,20 +175,99 @@ function aomark_listings_get_filterable_fields( $model ) {
 	);
 }
 
+/**
+ * Resolve a model without silently substituting a different configured model.
+ *
+ * An empty ID may still select the first model for backwards-compatible widget
+ * defaults. A non-empty unknown ID always fails closed.
+ *
+ * @param string $model_id      Model ID.
+ * @param bool   $allow_default Whether an empty ID may use the first model.
+ * @return array|null
+ */
+function aomark_listings_get_model_exact( $model_id = '', $allow_default = true ) {
+	$models   = aomark_listings_get_models();
+	$model_id = (string) $model_id;
+
+	if ( '' !== $model_id ) {
+		return $models[ $model_id ] ?? null;
+	}
+
+	return $allow_default && ! empty( $models ) ? reset( $models ) : null;
+}
+
+/**
+ * Whether the current public URL belongs to a specific listing type.
+ *
+ * Empty model parameters retain the historical single-view behavior. Once a
+ * model is present, other listing types on the same page ignore its filters.
+ *
+ * @param array $model Listing model.
+ * @return bool
+ */
+function aomark_listings_request_targets_model( $model ) {
+	$requested_model = aomark_listings_request_value( 'alm_model', 100 );
+
+	return '' === $requested_model || ( isset( $model['id'] ) && $model['id'] === $requested_model );
+}
+
+/**
+ * Read a URL value only when it targets the supplied listing type.
+ *
+ * @param array  $model      Listing model.
+ * @param string $key        Request key.
+ * @param int    $max_length Maximum value length.
+ * @return string
+ */
+function aomark_listings_request_value_for_model( $model, $key, $max_length = 200 ) {
+	return aomark_listings_request_targets_model( $model ) ? aomark_listings_request_value( $key, $max_length ) : '';
+}
+
+/**
+ * Restrict a requested sort to the public query contract.
+ *
+ * @param mixed $sort Sort value.
+ * @return string
+ */
+function aomark_listings_sanitize_sort( $sort ) {
+	$sort = sanitize_key( (string) $sort );
+
+	return in_array( $sort, [ 'date_desc', 'date_asc', 'title_asc', 'title_desc', 'price_asc', 'price_desc' ], true ) ? $sort : 'date_desc';
+}
+
 function aomark_listings_build_query_args( $settings = [], $page = 1 ) {
-	$model = aomark_listings_get_model( $settings['model_id'] ?? '' );
-	$page  = max( 1, absint( $page ) );
+	$model_id = sanitize_key( (string) ( $settings['model_id'] ?? '' ) );
+	$model = aomark_listings_get_model_exact( $model_id, '' === $model_id );
+	$page  = max( 1, min( 200, absint( $page ) ) );
 	$per_page = max( 1, min( 60, absint( $settings['per_page'] ?? 9 ) ) );
-	$read_url = 'yes' === ( $settings['read_url_filters'] ?? 'yes' );
-	$request_sort = $read_url ? aomark_listings_request_value( 'alm_sort' ) : '';
-	$sort     = sanitize_key( '' !== $request_sort ? $request_sort : ( $settings['sort'] ?? 'date_desc' ) );
-	$sort     = $sort ?: 'date_desc';
+	$read_url = $model && aomark_listings_request_targets_model( $model ) && 'yes' === ( $settings['read_url_filters'] ?? 'yes' );
+	// Paging and sorting are result controls, not optional content filters.
+	$request_sort = $model && aomark_listings_request_targets_model( $model ) ? aomark_listings_request_value( 'alm_sort', 20 ) : '';
+	$sort     = aomark_listings_sanitize_sort( '' !== $request_sort ? $request_sort : ( $settings['sort'] ?? 'date_desc' ) );
+
+	if ( ! $model ) {
+		return [
+			'model' => null,
+			'args'  => [
+				'post_type'           => 'any',
+				'post_status'         => 'publish',
+				'has_password'        => false,
+				'post__in'            => [ 0 ],
+				'posts_per_page'      => $per_page,
+				'paged'               => $page,
+				'ignore_sticky_posts' => true,
+			],
+			'sort'  => $sort,
+		];
+	}
 
 	$args = [
-		'post_type'      => $model['post_type'],
-		'post_status'    => 'publish',
-		'posts_per_page' => $per_page,
-		'paged'          => $page,
+		'post_type'           => $model['post_type'],
+		'post_status'         => 'publish',
+		'has_password'        => false,
+		'posts_per_page'      => $per_page,
+		'paged'               => $page,
+		'ignore_sticky_posts' => true,
 	];
 
 	if ( $read_url ) {
@@ -187,9 +278,13 @@ function aomark_listings_build_query_args( $settings = [], $page = 1 ) {
 	}
 
 	$tax_query = [];
-	foreach ( (array) ( $settings['taxonomy_filters'] ?? [] ) as $filter ) {
-		$ref = sanitize_text_field( $filter['taxonomy_id'] ?? '' );
-		$terms_raw = sanitize_text_field( $filter['terms'] ?? '' );
+	foreach ( array_slice( (array) ( $settings['taxonomy_filters'] ?? [] ), 0, 10 ) as $filter ) {
+		if ( ! is_array( $filter ) ) {
+			continue;
+		}
+
+		$ref = isset( $filter['taxonomy_id'] ) && is_scalar( $filter['taxonomy_id'] ) ? sanitize_text_field( (string) $filter['taxonomy_id'] ) : '';
+		$terms_raw = isset( $filter['terms'] ) && is_scalar( $filter['terms'] ) ? substr( sanitize_text_field( (string) $filter['terms'] ), 0, 1000 ) : '';
 		if ( '' === $ref || '' === $terms_raw ) {
 			continue;
 		}
@@ -207,7 +302,16 @@ function aomark_listings_build_query_args( $settings = [], $page = 1 ) {
 				continue;
 			}
 
-			$terms = array_filter( array_map( 'sanitize_title', array_map( 'trim', explode( ',', $terms_raw ) ) ) );
+			$terms = array_slice(
+				array_filter(
+					array_map( 'sanitize_title', array_map( 'trim', explode( ',', $terms_raw ) ) ),
+					function ( $term ) {
+						return '' !== $term;
+					}
+				),
+				0,
+				20
+			);
 			if ( ! empty( $terms ) ) {
 				$tax_query[] = [
 					'taxonomy'         => $taxonomy['slug'],
@@ -221,6 +325,10 @@ function aomark_listings_build_query_args( $settings = [], $page = 1 ) {
 
 	if ( $read_url ) {
 		foreach ( aomark_listings_get_filterable_taxonomies( $model ) as $taxonomy ) {
+			if ( count( $tax_query ) >= 20 ) {
+				break;
+			}
+
 			$terms = aomark_listings_request_array( aomark_listings_filter_param( $taxonomy['id'] ) );
 			if ( ! empty( $terms ) && taxonomy_exists( $taxonomy['slug'] ) ) {
 				$tax_query[] = [
@@ -238,9 +346,13 @@ function aomark_listings_build_query_args( $settings = [], $page = 1 ) {
 	}
 
 	$meta_query = [];
-	foreach ( (array) ( $settings['meta_filters'] ?? [] ) as $filter ) {
-		$ref = sanitize_text_field( $filter['field_id'] ?? '' );
-		$value = isset( $filter['value'] ) ? trim( sanitize_text_field( $filter['value'] ) ) : '';
+	foreach ( array_slice( (array) ( $settings['meta_filters'] ?? [] ), 0, 10 ) as $filter ) {
+		if ( ! is_array( $filter ) ) {
+			continue;
+		}
+
+		$ref = isset( $filter['field_id'] ) && is_scalar( $filter['field_id'] ) ? sanitize_text_field( (string) $filter['field_id'] ) : '';
+		$value = isset( $filter['value'] ) && is_scalar( $filter['value'] ) ? substr( trim( sanitize_text_field( (string) $filter['value'] ) ), 0, 200 ) : '';
 		if ( '' === $ref || '' === $value ) {
 			continue;
 		}
@@ -258,7 +370,7 @@ function aomark_listings_build_query_args( $settings = [], $page = 1 ) {
 			continue;
 		}
 
-		$compare = strtoupper( sanitize_text_field( $filter['compare'] ?? '=' ) );
+		$compare = isset( $filter['compare'] ) && is_scalar( $filter['compare'] ) ? strtoupper( sanitize_text_field( (string) $filter['compare'] ) ) : '=';
 		$compare = in_array( $compare, [ '=', 'LIKE', '>=', '<=', '>', '<' ], true ) ? $compare : '=';
 		$query = [
 			'key'     => aomark_listings_meta_key( $field ),
@@ -280,14 +392,18 @@ function aomark_listings_build_query_args( $settings = [], $page = 1 ) {
 
 	if ( $read_url ) {
 		foreach ( aomark_listings_get_filterable_fields( $model ) as $field ) {
+			if ( count( $meta_query ) >= 20 ) {
+				break;
+			}
+
 			$key = aomark_listings_meta_key( $field );
 			if ( in_array( $field['type'], [ 'number', 'price' ], true ) ) {
 				$min = aomark_listings_numeric_value( aomark_listings_request_value( 'alm_min_' . $field['id'] ) );
 				$max = aomark_listings_numeric_value( aomark_listings_request_value( 'alm_max_' . $field['id'] ) );
-				if ( null !== $min ) {
+				if ( null !== $min && count( $meta_query ) < 20 ) {
 					$meta_query[] = [ 'key' => $key, 'value' => $min, 'type' => 'NUMERIC', 'compare' => '>=' ];
 				}
-				if ( null !== $max ) {
+				if ( null !== $max && count( $meta_query ) < 20 ) {
 					$meta_query[] = [ 'key' => $key, 'value' => $max, 'type' => 'NUMERIC', 'compare' => '<=' ];
 				}
 			} else {
@@ -341,31 +457,101 @@ function aomark_listings_get_query( $settings = [], $page = 1 ) {
 }
 
 function aomark_listings_get_map_items( $settings = [] ) {
-	$settings['per_page'] = $settings['map_limit'] ?? $settings['limit'] ?? 200;
-	$data  = aomark_listings_get_query( $settings, 1 );
-	$model = $data['model'];
+	$limit = max( 1, min( 500, absint( $settings['map_limit'] ?? $settings['limit'] ?? 200 ) ) );
+	$built = aomark_listings_build_query_args( $settings, 1 );
+	$model = $built['model'];
 	$items = [];
 
-	foreach ( $data['query']->posts as $post ) {
+	if ( ! $model ) {
+		return $items;
+	}
+
+	$location_field = aomark_listings_get_first_field_by_type( $model, 'location' );
+	if ( ! $location_field ) {
+		return $items;
+	}
+
+	$location_key = aomark_listings_meta_key( $location_field );
+	if ( empty( $built['args']['meta_query'] ) ) {
+		$built['args']['meta_query'] = [];
+	}
+	// Reject malformed legacy values before DECIMAL casts can turn them into zero
+	// and consume one of the bounded map result slots.
+	$coordinate_pattern = '^[+-]?([0-9]+([.,][0-9]*)?|[.,][0-9]+)([eE][+-]?[0-9]+)?$';
+	$built['args']['meta_query'][] = [
+		'key'     => $location_key . '_lat',
+		'value'   => $coordinate_pattern,
+		'compare' => 'REGEXP',
+	];
+	$built['args']['meta_query'][] = [
+		'key'     => $location_key . '_lng',
+		'value'   => $coordinate_pattern,
+		'compare' => 'REGEXP',
+	];
+	$built['args']['meta_query'][] = [
+		'key'     => $location_key . '_lat',
+		'value'   => [ -90, 90 ],
+		'compare' => 'BETWEEN',
+		'type'    => 'DECIMAL(10,7)',
+	];
+	$built['args']['meta_query'][] = [
+		'key'     => $location_key . '_lng',
+		'value'   => [ -180, 180 ],
+		'compare' => 'BETWEEN',
+		'type'    => 'DECIMAL(10,7)',
+	];
+	$built['args']['meta_query'][] = [
+		'relation' => 'OR',
+		[
+			'key'     => $location_key . '_lat',
+			'value'   => 0,
+			'compare' => '!=',
+			'type'    => 'NUMERIC',
+		],
+		[
+			'key'     => $location_key . '_lng',
+			'value'   => 0,
+			'compare' => '!=',
+			'type'    => 'NUMERIC',
+		],
+	];
+
+	$built['args']['posts_per_page'] = $limit;
+	$built['args']['paged']          = 1;
+	$built['args']['no_found_rows']  = true;
+	$query = new WP_Query( $built['args'] );
+
+	foreach ( $query->posts as $post ) {
+		if ( post_password_required( $post ) && ! current_user_can( 'edit_post', $post->ID ) ) {
+			continue;
+		}
+
 		$location = aomark_listings_location_value( $post->ID, $model );
 		if ( ! $location ) {
 			continue;
 		}
 
 		$price_field = aomark_listings_get_first_field_by_type( $model, 'price' );
-		$items[] = [
+		$item = [
 			'id'      => $post->ID,
 			'title'   => html_entity_decode( get_the_title( $post ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
 			'url'     => get_permalink( $post ),
-			'image'   => get_the_post_thumbnail_url( $post, 'medium' ) ?: '',
 			'lat'     => $location['lat'],
 			'lng'     => $location['lng'],
-			'address' => $location['address'],
-			'price'   => $price_field ? aomark_listings_field_display_value( $post->ID, $price_field, $settings ) : '',
 		];
-	}
 
-	wp_reset_postdata();
+		if ( 'no' !== ( $settings['popup_image'] ?? 'yes' ) ) {
+			$item['image'] = get_the_post_thumbnail_url( $post, 'medium' ) ?: '';
+		}
+		if ( 'no' !== ( $settings['popup_address'] ?? 'yes' ) ) {
+			$item['address'] = $location['address'];
+		}
+		if ( 'no' !== ( $settings['popup_price'] ?? 'yes' ) ) {
+			$item['price'] = $price_field ? aomark_listings_field_display_value( $post->ID, $price_field, $settings ) : '';
+		}
+
+		$items[] = $item;
+	}
 
 	return $items;
 }

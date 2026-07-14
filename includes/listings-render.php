@@ -11,9 +11,77 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function aomark_listings_sanitize_results_settings( $settings = [] ) {
 	$settings = is_array( $settings ) ? $settings : [];
+	$model_id = sanitize_key( (string) ( $settings['model_id'] ?? '' ) );
+	$model    = aomark_listings_get_model_exact( $model_id, '' === $model_id );
+	$model_id = $model ? $model['id'] : $model_id;
+	$sort     = aomark_listings_sanitize_sort( $settings['sort'] ?? 'date_desc' );
+	$taxonomy_filters = [];
+	$meta_filters     = [];
+	$card_field_ids   = [];
+
+	if ( $model ) {
+		foreach ( array_slice( (array) ( $settings['taxonomy_filters'] ?? [] ), 0, 10 ) as $filter ) {
+			if ( ! is_array( $filter ) || ! is_scalar( $filter['taxonomy_id'] ?? null ) || ! is_scalar( $filter['terms'] ?? null ) ) {
+				continue;
+			}
+
+			$reference = sanitize_text_field( (string) $filter['taxonomy_id'] );
+			$parts     = explode( ':', $reference, 2 );
+			$filter_model_id = isset( $parts[1] ) ? sanitize_key( $parts[0] ) : $model['id'];
+			$taxonomy_id     = sanitize_key( isset( $parts[1] ) ? $parts[1] : $parts[0] );
+			$known            = false;
+
+			foreach ( (array) $model['taxonomies'] as $taxonomy ) {
+				if ( $taxonomy_id === $taxonomy['id'] ) {
+					$known = true;
+					break;
+				}
+			}
+
+			$terms = substr( sanitize_text_field( (string) $filter['terms'] ), 0, 1000 );
+			if ( $known && $filter_model_id === $model['id'] && '' !== $terms ) {
+				$taxonomy_filters[] = [
+					'taxonomy_id' => $model['id'] . ':' . $taxonomy_id,
+					'terms'       => $terms,
+				];
+			}
+		}
+
+		foreach ( array_slice( (array) ( $settings['meta_filters'] ?? [] ), 0, 10 ) as $filter ) {
+			if ( ! is_array( $filter ) || ! is_scalar( $filter['field_id'] ?? null ) || ! is_scalar( $filter['value'] ?? null ) ) {
+				continue;
+			}
+
+			$reference = sanitize_text_field( (string) $filter['field_id'] );
+			$parts     = explode( ':', $reference, 2 );
+			$filter_model_id = isset( $parts[1] ) ? sanitize_key( $parts[0] ) : $model['id'];
+			$field_id        = sanitize_key( isset( $parts[1] ) ? $parts[1] : $parts[0] );
+			$field           = aomark_listings_get_field( $model, $field_id );
+			$value           = substr( trim( sanitize_text_field( (string) $filter['value'] ) ), 0, 200 );
+			$compare_raw     = isset( $filter['compare'] ) && is_scalar( $filter['compare'] ) ? (string) $filter['compare'] : '=';
+			$compare         = strtoupper( sanitize_text_field( $compare_raw ) );
+			$compare         = in_array( $compare, [ '=', 'LIKE', '>=', '<=', '>', '<' ], true ) ? $compare : '=';
+
+			if ( $field && $filter_model_id === $model['id'] && '' !== $value ) {
+				$meta_filters[] = [
+					'field_id' => $model['id'] . ':' . $field['id'],
+					'compare'  => $compare,
+					'value'    => $value,
+				];
+			}
+		}
+
+		$selected_card_fields = aomark_listings_normalize_selected_ids( $settings['card_field_ids'] ?? [], $model['id'] );
+		foreach ( array_slice( $selected_card_fields, 0, 20 ) as $field_id ) {
+			$field = aomark_listings_get_field( $model, $field_id );
+			if ( $field && ! in_array( $field['type'], [ 'price', 'image', 'gallery', 'location' ], true ) ) {
+				$card_field_ids[] = $model['id'] . ':' . $field['id'];
+			}
+		}
+	}
 
 	return [
-		'model_id'         => sanitize_key( $settings['model_id'] ?? '' ),
+		'model_id'         => $model_id,
 		'per_page'         => max( 1, min( 60, absint( $settings['per_page'] ?? 9 ) ) ),
 		'read_url_filters' => aomark_listings_switch_setting( $settings, 'read_url_filters', 'yes' ),
 		'ajax'             => aomark_listings_switch_setting( $settings, 'ajax', 'yes' ),
@@ -28,17 +96,17 @@ function aomark_listings_sanitize_results_settings( $settings = [] ) {
 		'show_price'       => aomark_listings_switch_setting( $settings, 'show_price', 'yes' ),
 		'show_meta'        => aomark_listings_switch_setting( $settings, 'show_meta', 'yes' ),
 		'show_button'      => aomark_listings_switch_setting( $settings, 'show_button', 'yes' ),
-		'sort'             => sanitize_key( $settings['sort'] ?? 'date_desc' ),
+		'sort'             => $sort,
 		'image_size'       => sanitize_key( $settings['image_size'] ?? 'medium_large' ),
 		'title_tag'        => in_array( (string) ( $settings['title_tag'] ?? 'h3' ), [ 'h2', 'h3', 'h4', 'h5', 'div' ], true ) ? (string) $settings['title_tag'] : 'h3',
-		'button_text'      => sanitize_text_field( $settings['button_text'] ?? __( 'View Details', 'aomark-listings' ) ),
-		'empty_message'    => sanitize_text_field( $settings['empty_message'] ?? __( 'No listings found.', 'aomark-listings' ) ),
-		'load_more_text'   => sanitize_text_field( $settings['load_more_text'] ?? __( 'Load More', 'aomark-listings' ) ),
-		'currency'         => sanitize_text_field( $settings['currency'] ?? '$' ),
+		'button_text'      => substr( sanitize_text_field( $settings['button_text'] ?? __( 'View Details', 'aomark-listings' ) ), 0, 100 ),
+		'empty_message'    => substr( sanitize_text_field( $settings['empty_message'] ?? __( 'No listings found.', 'aomark-listings' ) ), 0, 300 ),
+		'load_more_text'   => substr( sanitize_text_field( $settings['load_more_text'] ?? __( 'Load More', 'aomark-listings' ) ), 0, 100 ),
+		'currency'         => substr( sanitize_text_field( $settings['currency'] ?? '$' ), 0, 12 ),
 		'decimals'         => min( 4, absint( $settings['decimals'] ?? 0 ) ),
-		'taxonomy_filters' => isset( $settings['taxonomy_filters'] ) && is_array( $settings['taxonomy_filters'] ) ? $settings['taxonomy_filters'] : [],
-		'meta_filters'     => isset( $settings['meta_filters'] ) && is_array( $settings['meta_filters'] ) ? $settings['meta_filters'] : [],
-		'card_field_ids'   => $settings['card_field_ids'] ?? [],
+		'taxonomy_filters' => $taxonomy_filters,
+		'meta_filters'     => $meta_filters,
+		'card_field_ids'   => $card_field_ids,
 	];
 }
 
@@ -50,10 +118,77 @@ function aomark_listings_switch_setting( $settings, $key, $default = 'yes' ) {
 	return 'yes' === $default ? 'yes' : 'no';
 }
 
+/**
+ * Create a cache-safe, purpose-bound descriptor for public AJAX requests.
+ *
+ * The payload is visible to the browser but cannot be modified without
+ * invalidating its HMAC. This is authorization for configuration integrity;
+ * the WordPress nonce remains a separate CSRF/replay-hardening measure.
+ *
+ * @param string $purpose Descriptor purpose.
+ * @param array  $payload Sanitized payload.
+ * @return array
+ */
+function aomark_listings_create_signed_descriptor( $purpose, $payload ) {
+	$json    = wp_json_encode( (array) $payload );
+	$encoded = rtrim( strtr( base64_encode( $json ), '+/', '-_' ), '=' );
+	$message = 'aomark-listings|' . sanitize_key( $purpose ) . '|1|' . $encoded;
+
+	return [
+		'v' => 1,
+		'p' => $encoded,
+		's' => hash_hmac( 'sha256', $message, wp_salt( 'auth' ) ),
+	];
+}
+
+/**
+ * Verify and decode a signed public descriptor.
+ *
+ * @param mixed  $descriptor Descriptor array.
+ * @param string $purpose    Expected purpose.
+ * @return array|false
+ */
+function aomark_listings_verify_signed_descriptor( $descriptor, $purpose ) {
+	if ( ! is_array( $descriptor ) || 1 !== (int) ( $descriptor['v'] ?? 0 ) ) {
+		return false;
+	}
+
+	$encoded   = isset( $descriptor['p'] ) && is_string( $descriptor['p'] ) ? $descriptor['p'] : '';
+	$signature = isset( $descriptor['s'] ) && is_string( $descriptor['s'] ) ? $descriptor['s'] : '';
+	if ( '' === $encoded || strlen( $encoded ) > 32768 || ! preg_match( '/^[A-Za-z0-9_-]+$/', $encoded ) || ! preg_match( '/^[a-f0-9]{64}$/', $signature ) ) {
+		return false;
+	}
+
+	$message  = 'aomark-listings|' . sanitize_key( $purpose ) . '|1|' . $encoded;
+	$expected = hash_hmac( 'sha256', $message, wp_salt( 'auth' ) );
+	if ( ! hash_equals( $expected, $signature ) ) {
+		return false;
+	}
+
+	$padding = strlen( $encoded ) % 4;
+	if ( $padding ) {
+		$encoded .= str_repeat( '=', 4 - $padding );
+	}
+
+	$json = base64_decode( strtr( $encoded, '-_', '+/' ), true );
+	if ( false === $json || strlen( $json ) > 24576 ) {
+		return false;
+	}
+
+	$payload = json_decode( $json, true, 20 );
+
+	return is_array( $payload ) ? $payload : false;
+}
+
 function aomark_listings_render_filter( $settings = [] ) {
 	aomark_listings_enqueue_assets();
 
-	$model = aomark_listings_get_model( $settings['model_id'] ?? '' );
+	$model_id = sanitize_key( (string) ( $settings['model_id'] ?? '' ) );
+	$model = aomark_listings_get_model_exact( $model_id, '' === $model_id );
+	if ( ! $model ) {
+		return '';
+	}
+
 	$settings = wp_parse_args(
 		(array) $settings,
 		[
@@ -71,16 +206,21 @@ function aomark_listings_render_filter( $settings = [] ) {
 
 	$results_url = $settings['results_url'] ? $settings['results_url'] : get_permalink();
 	$results_url = $results_url ? $results_url : home_url( '/' );
+	$request_targets_model = aomark_listings_request_targets_model( $model );
 
 	ob_start();
 	?>
 	<div class="aomark-listings-filter" data-model-id="<?php echo esc_attr( $model['id'] ); ?>">
 		<form class="aomark-listings-filter__form" action="<?php echo esc_url( $results_url ); ?>" method="get">
 			<input type="hidden" name="alm_model" value="<?php echo esc_attr( $model['id'] ); ?>">
+			<?php $active_sort = $request_targets_model ? aomark_listings_request_value( 'alm_sort', 20 ) : ''; ?>
+			<?php if ( '' !== $active_sort ) : ?>
+				<input type="hidden" name="alm_sort" value="<?php echo esc_attr( aomark_listings_sanitize_sort( $active_sort ) ); ?>">
+			<?php endif; ?>
 
 			<?php if ( 'yes' === aomark_listings_switch_setting( $settings, 'show_keyword', 'yes' ) ) : ?>
 				<div class="aomark-listings-filter__field aomark-listings-filter__field--keyword">
-					<input type="search" name="alm_keyword" value="<?php echo esc_attr( aomark_listings_request_value( 'alm_keyword' ) ); ?>" placeholder="<?php echo esc_attr( $settings['keyword_placeholder'] ); ?>" aria-label="<?php echo esc_attr( $settings['keyword_placeholder'] ); ?>">
+					<input type="search" name="alm_keyword" value="<?php echo esc_attr( aomark_listings_request_value_for_model( $model, 'alm_keyword' ) ); ?>" placeholder="<?php echo esc_attr( $settings['keyword_placeholder'] ); ?>" aria-label="<?php echo esc_attr( $settings['keyword_placeholder'] ); ?>">
 				</div>
 			<?php endif; ?>
 
@@ -93,7 +233,7 @@ function aomark_listings_render_filter( $settings = [] ) {
 					<?php if ( ! taxonomy_exists( $taxonomy['slug'] ) ) : ?>
 						<?php continue; ?>
 					<?php endif; ?>
-					<?php $selected = aomark_listings_request_value( aomark_listings_filter_param( $taxonomy['id'] ) ); ?>
+					<?php $selected = aomark_listings_request_value_for_model( $model, aomark_listings_filter_param( $taxonomy['id'] ) ); ?>
 					<?php $terms = get_terms( [ 'taxonomy' => $taxonomy['slug'], 'hide_empty' => false ] ); ?>
 					<div class="aomark-listings-filter__field aomark-listings-filter__field--taxonomy">
 						<select name="<?php echo esc_attr( aomark_listings_filter_param( $taxonomy['id'] ) ); ?>" aria-label="<?php echo esc_attr( $taxonomy['plural'] ); ?>">
@@ -116,13 +256,13 @@ function aomark_listings_render_filter( $settings = [] ) {
 					<?php endif; ?>
 					<?php if ( in_array( $field['type'], [ 'number', 'price' ], true ) ) : ?>
 						<div class="aomark-listings-filter__field aomark-listings-filter__field--min">
-							<input type="number" step="any" name="<?php echo esc_attr( 'alm_min_' . $field['id'] ); ?>" value="<?php echo esc_attr( aomark_listings_request_value( 'alm_min_' . $field['id'] ) ); ?>" placeholder="<?php echo esc_attr( sprintf( __( 'Min %s', 'aomark-listings' ), $field['label'] ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Minimum %s', 'aomark-listings' ), $field['label'] ) ); ?>">
+							<input type="number" step="any" name="<?php echo esc_attr( 'alm_min_' . $field['id'] ); ?>" value="<?php echo esc_attr( aomark_listings_request_value_for_model( $model, 'alm_min_' . $field['id'] ) ); ?>" placeholder="<?php echo esc_attr( sprintf( __( 'Min %s', 'aomark-listings' ), $field['label'] ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Minimum %s', 'aomark-listings' ), $field['label'] ) ); ?>">
 						</div>
 						<div class="aomark-listings-filter__field aomark-listings-filter__field--max">
-							<input type="number" step="any" name="<?php echo esc_attr( 'alm_max_' . $field['id'] ); ?>" value="<?php echo esc_attr( aomark_listings_request_value( 'alm_max_' . $field['id'] ) ); ?>" placeholder="<?php echo esc_attr( sprintf( __( 'Max %s', 'aomark-listings' ), $field['label'] ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Maximum %s', 'aomark-listings' ), $field['label'] ) ); ?>">
+							<input type="number" step="any" name="<?php echo esc_attr( 'alm_max_' . $field['id'] ); ?>" value="<?php echo esc_attr( aomark_listings_request_value_for_model( $model, 'alm_max_' . $field['id'] ) ); ?>" placeholder="<?php echo esc_attr( sprintf( __( 'Max %s', 'aomark-listings' ), $field['label'] ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Maximum %s', 'aomark-listings' ), $field['label'] ) ); ?>">
 						</div>
 					<?php elseif ( 'select' === $field['type'] ) : ?>
-						<?php $selected = aomark_listings_request_value( aomark_listings_filter_param( 'field_' . $field['id'] ) ); ?>
+						<?php $selected = aomark_listings_request_value_for_model( $model, aomark_listings_filter_param( 'field_' . $field['id'] ) ); ?>
 						<div class="aomark-listings-filter__field">
 							<select name="<?php echo esc_attr( aomark_listings_filter_param( 'field_' . $field['id'] ) ); ?>" aria-label="<?php echo esc_attr( $field['label'] ); ?>">
 								<option value=""><?php echo esc_html( $field['label'] ); ?></option>
@@ -133,7 +273,7 @@ function aomark_listings_render_filter( $settings = [] ) {
 						</div>
 					<?php else : ?>
 						<div class="aomark-listings-filter__field">
-							<input type="text" name="<?php echo esc_attr( aomark_listings_filter_param( 'field_' . $field['id'] ) ); ?>" value="<?php echo esc_attr( aomark_listings_request_value( aomark_listings_filter_param( 'field_' . $field['id'] ) ) ); ?>" placeholder="<?php echo esc_attr( $field['label'] ); ?>" aria-label="<?php echo esc_attr( $field['label'] ); ?>">
+							<input type="text" name="<?php echo esc_attr( aomark_listings_filter_param( 'field_' . $field['id'] ) ); ?>" value="<?php echo esc_attr( aomark_listings_request_value_for_model( $model, aomark_listings_filter_param( 'field_' . $field['id'] ) ) ); ?>" placeholder="<?php echo esc_attr( $field['label'] ); ?>" aria-label="<?php echo esc_attr( $field['label'] ); ?>">
 						</div>
 					<?php endif; ?>
 				<?php endforeach; ?>
@@ -144,7 +284,7 @@ function aomark_listings_render_filter( $settings = [] ) {
 			</div>
 			<?php if ( 'yes' === aomark_listings_switch_setting( $settings, 'show_reset', 'no' ) ) : ?>
 				<div class="aomark-listings-filter__field aomark-listings-filter__field--reset">
-					<button type="button" class="aomark-listings-reset"><?php echo esc_html( $settings['reset_text'] ); ?></button>
+					<a href="<?php echo esc_url( $results_url ); ?>" class="aomark-listings-reset"><?php echo esc_html( $settings['reset_text'] ); ?></a>
 				</div>
 			<?php endif; ?>
 		</form>
@@ -154,6 +294,17 @@ function aomark_listings_render_filter( $settings = [] ) {
 }
 
 function aomark_listings_render_card( $post_id, $model, $settings ) {
+	$post_id = aomark_listings_context_post_id(
+		[
+			'post_id'  => $post_id,
+			'model_id' => $model['id'] ?? '',
+		],
+		$model
+	);
+	if ( ! $post_id ) {
+		return '';
+	}
+
 	$title = get_the_title( $post_id );
 	$url   = get_permalink( $post_id );
 	$image_id = get_post_thumbnail_id( $post_id );
@@ -180,7 +331,7 @@ function aomark_listings_render_card( $post_id, $model, $settings ) {
 	?>
 	<article class="aomark-listings-card<?php echo 'yes' === $settings['show_image'] ? '' : ' aomark-listings-card--no-image'; ?>">
 		<?php if ( 'yes' === $settings['show_image'] ) : ?>
-			<a class="aomark-listings-card__image" href="<?php echo esc_url( $url ); ?>">
+			<a class="aomark-listings-card__image" href="<?php echo esc_url( $url ); ?>" aria-label="<?php echo esc_attr( $title ); ?>">
 				<?php if ( $image ) : ?>
 					<?php echo $image; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<?php else : ?>
@@ -218,25 +369,117 @@ function aomark_listings_render_card( $post_id, $model, $settings ) {
 	return ob_get_clean();
 }
 
-function aomark_listings_render_pagination( $page, $max_pages ) {
-	$page      = max( 1, absint( $page ) );
-	$max_pages = max( 1, absint( $max_pages ) );
+/**
+ * Build the current results URL for a page while retaining active filters.
+ *
+ * A relative query URL is intentional: AJAX-rendered pagination is generated
+ * on admin-ajax.php, but the link must still resolve against the public page.
+ *
+ * @param int        $page  Page number.
+ * @param array|null $model Listing model used to scope public URL state.
+ * @return string
+ */
+function aomark_listings_results_page_url( $page, $model = null ) {
+	$page = max( 1, min( 200, absint( $page ) ) );
+
+	if ( ! $model ) {
+		$url = remove_query_arg( 'alm_page' );
+
+		return 1 === $page ? $url : add_query_arg( 'alm_page', $page, $url );
+	}
+
+	$params = [];
+	if ( aomark_listings_request_targets_model( $model ) ) {
+		$params = aomark_listings_sanitize_ajax_filters( http_build_query( wp_unslash( (array) $_GET ) ), $model );
+	}
+	unset( $params['alm_page'] );
+	$params['alm_model'] = $model['id'];
+	if ( $page > 1 ) {
+		$params['alm_page'] = $page;
+	}
+
+	return '?' . http_build_query( $params, '', '&', PHP_QUERY_RFC3986 );
+}
+
+/**
+ * Render sanitized active listing filters as hidden form controls.
+ *
+ * @param string[]  $excluded Excluded parameter names.
+ * @param array|null $model    Listing model used to allowlist filter keys.
+ * @return string
+ */
+function aomark_listings_render_active_filter_inputs( $excluded = [], $model = null ) {
+	$excluded = array_map( 'sanitize_key', (array) $excluded );
+	$html     = '';
+	$source   = (array) $_GET;
+
+	if ( $model ) {
+		$source = aomark_listings_request_targets_model( $model ) ? aomark_listings_sanitize_ajax_filters( http_build_query( wp_unslash( $source ) ), $model ) : [];
+		$source['alm_model'] = $model['id'];
+	} else {
+		$source = array_slice( $source, 0, 50, true );
+	}
+
+	foreach ( $source as $key => $value ) {
+		$key = substr( sanitize_key( (string) $key ), 0, 80 );
+		if ( 0 !== strpos( $key, 'alm_' ) || in_array( $key, $excluded, true ) ) {
+			continue;
+		}
+
+		$values = is_array( $value ) ? array_slice( $value, 0, 20 ) : [ $value ];
+		foreach ( $values as $item ) {
+			if ( ! is_scalar( $item ) ) {
+				continue;
+			}
+			$name  = is_array( $value ) ? $key . '[]' : $key;
+			$item  = substr( sanitize_text_field( wp_unslash( (string) $item ) ), 0, 200 );
+			$html .= sprintf( '<input type="hidden" name="%1$s" value="%2$s">', esc_attr( $name ), esc_attr( $item ) );
+		}
+	}
+
+	return $html;
+}
+
+function aomark_listings_render_pagination( $page, $max_pages, $model = null ) {
+	$max_pages = max( 1, min( 200, absint( $max_pages ) ) );
+	$page      = max( 1, min( $max_pages, absint( $page ) ) );
 
 	if ( $max_pages <= 1 ) {
 		return '';
 	}
 
-	$pages = array_unique( array_filter( [ 1, $page - 1, $page, $page + 1, $max_pages ] ) );
+	$pages = array_values(
+		array_unique(
+			array_filter(
+				[ 1, $page - 1, $page, $page + 1, $max_pages ],
+				function ( $candidate ) use ( $max_pages ) {
+					return $candidate >= 1 && $candidate <= $max_pages;
+				}
+			)
+		)
+	);
 	sort( $pages );
 
 	ob_start();
 	?>
 	<nav class="aomark-listings-pagination" aria-label="<?php esc_attr_e( 'Listings pagination', 'aomark-listings' ); ?>">
-		<button type="button" data-page="<?php echo esc_attr( max( 1, $page - 1 ) ); ?>" <?php disabled( $page <= 1 ); ?>><?php esc_html_e( 'Previous', 'aomark-listings' ); ?></button>
+		<?php if ( $page > 1 ) : ?>
+			<a href="<?php echo esc_url( aomark_listings_results_page_url( $page - 1, $model ) ); ?>" data-page="<?php echo esc_attr( $page - 1 ); ?>"><?php esc_html_e( 'Previous', 'aomark-listings' ); ?></a>
+		<?php else : ?>
+			<span class="is-disabled" aria-disabled="true"><?php esc_html_e( 'Previous', 'aomark-listings' ); ?></span>
+		<?php endif; ?>
 		<?php foreach ( $pages as $page_number ) : ?>
-				<button type="button" class="<?php echo $page_number === $page ? 'is-active' : ''; ?>" data-page="<?php echo esc_attr( $page_number ); ?>" <?php echo $page_number === $page ? 'aria-current="page"' : ''; ?> <?php disabled( $page_number === $page ); ?>><?php echo esc_html( $page_number ); ?></button>
+			<?php if ( $page_number === $page ) : ?>
+				<span class="is-active" aria-current="page"><?php echo esc_html( $page_number ); ?></span>
+			<?php else : ?>
+				<a href="<?php echo esc_url( aomark_listings_results_page_url( $page_number, $model ) ); ?>" data-page="<?php echo esc_attr( $page_number ); ?>"><?php echo esc_html( $page_number ); ?></a>
+			<?php endif; ?>
 		<?php endforeach; ?>
-		<button type="button" data-page="<?php echo esc_attr( min( $max_pages, $page + 1 ) ); ?>" <?php disabled( $page >= $max_pages ); ?>><?php esc_html_e( 'Next', 'aomark-listings' ); ?></button>
+		<?php if ( $page < $max_pages ) : ?>
+			<a href="<?php echo esc_url( aomark_listings_results_page_url( $page + 1, $model ) ); ?>" data-page="<?php echo esc_attr( $page + 1 ); ?>"><?php esc_html_e( 'Next', 'aomark-listings' ); ?></a>
+		<?php else : ?>
+			<span class="is-disabled" aria-disabled="true"><?php esc_html_e( 'Next', 'aomark-listings' ); ?></span>
+		<?php endif; ?>
 	</nav>
 	<?php
 	return ob_get_clean();
@@ -244,10 +487,29 @@ function aomark_listings_render_pagination( $page, $max_pages ) {
 
 function aomark_listings_render_results_inner( $settings = [], $page = 1 ) {
 	$settings = aomark_listings_sanitize_results_settings( $settings );
-	$data     = aomark_listings_get_query( $settings, $page );
-	$model    = $data['model'];
-	$query    = $data['query'];
-	$page     = max( 1, absint( $page ) );
+	$model    = aomark_listings_get_model_exact( $settings['model_id'], false );
+	$page     = max( 1, min( 200, absint( $page ) ) );
+
+	if ( ! $model ) {
+		return [
+			'html'      => '<div class="aomark-listings-empty">' . esc_html__( 'The selected listing type is unavailable.', 'aomark-listings' ) . '</div>',
+			'total'     => 0,
+			'page'      => $page,
+			'max_pages' => 0,
+			'model'     => null,
+		];
+	}
+
+	$data  = aomark_listings_get_query( $settings, $page );
+	$query = $data['query'];
+	$max_pages = min( 200, (int) $query->max_num_pages );
+	if ( $max_pages > 0 && $page > $max_pages ) {
+		$page  = $max_pages;
+		$data  = aomark_listings_get_query( $settings, $page );
+		$query = $data['query'];
+	}
+	$had_global_post      = array_key_exists( 'post', $GLOBALS );
+	$original_global_post = $had_global_post ? $GLOBALS['post'] : null;
 
 	ob_start();
 	?>
@@ -263,9 +525,11 @@ function aomark_listings_render_results_inner( $settings = [], $page = 1 ) {
 					<div class="aomark-listings-results__count"><?php echo esc_html( sprintf( _n( '%s listing', '%s listings', (int) $query->found_posts, 'aomark-listings' ), number_format_i18n( (int) $query->found_posts ) ) ); ?></div>
 				<?php endif; ?>
 				<?php if ( 'yes' === $settings['show_sort'] ) : ?>
-					<label class="aomark-listings-results__sort">
-						<span><?php esc_html_e( 'Sort', 'aomark-listings' ); ?></span>
-						<select data-aomark-listings-sort>
+					<form class="aomark-listings-results__sort" method="get">
+						<?php echo aomark_listings_render_active_filter_inputs( [ 'alm_sort', 'alm_page' ], $model ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						<label>
+							<span><?php esc_html_e( 'Sort', 'aomark-listings' ); ?></span>
+							<select name="alm_sort" data-aomark-listings-sort>
 							<option value="date_desc" <?php selected( $data['sort'], 'date_desc' ); ?>><?php esc_html_e( 'Newest', 'aomark-listings' ); ?></option>
 							<option value="date_asc" <?php selected( $data['sort'], 'date_asc' ); ?>><?php esc_html_e( 'Oldest', 'aomark-listings' ); ?></option>
 							<option value="title_asc" <?php selected( $data['sort'], 'title_asc' ); ?>><?php esc_html_e( 'Title A-Z', 'aomark-listings' ); ?></option>
@@ -274,8 +538,10 @@ function aomark_listings_render_results_inner( $settings = [], $page = 1 ) {
 								<option value="price_asc" <?php selected( $data['sort'], 'price_asc' ); ?>><?php esc_html_e( 'Price Low to High', 'aomark-listings' ); ?></option>
 								<option value="price_desc" <?php selected( $data['sort'], 'price_desc' ); ?>><?php esc_html_e( 'Price High to Low', 'aomark-listings' ); ?></option>
 							<?php endif; ?>
-						</select>
-					</label>
+							</select>
+						</label>
+						<noscript><button type="submit"><?php esc_html_e( 'Apply sort', 'aomark-listings' ); ?></button></noscript>
+					</form>
 				<?php endif; ?>
 			</div>
 	<?php endif; ?>
@@ -292,20 +558,27 @@ function aomark_listings_render_results_inner( $settings = [], $page = 1 ) {
 	<?php endif; ?>
 
 	<?php if ( 'numbered' === $settings['pagination'] ) : ?>
-		<?php echo aomark_listings_render_pagination( $page, (int) $query->max_num_pages ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-	<?php elseif ( 'load_more' === $settings['pagination'] && $page < (int) $query->max_num_pages ) : ?>
+		<?php echo aomark_listings_render_pagination( $page, (int) $query->max_num_pages, $model ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+	<?php elseif ( 'load_more' === $settings['pagination'] && $page < min( 200, (int) $query->max_num_pages ) ) : ?>
 		<div class="aomark-listings-results__actions">
-			<button type="button" class="aomark-listings-load-more" data-page="<?php echo esc_attr( $page + 1 ); ?>"><?php echo esc_html( $settings['load_more_text'] ); ?></button>
+			<a href="<?php echo esc_url( aomark_listings_results_page_url( $page + 1, $model ) ); ?>" class="aomark-listings-load-more" data-page="<?php echo esc_attr( $page + 1 ); ?>"><?php echo esc_html( $settings['load_more_text'] ); ?></a>
 		</div>
 	<?php endif; ?>
 	<?php
-	wp_reset_postdata();
+	if ( $had_global_post ) {
+		$GLOBALS['post'] = $original_global_post;
+		if ( $original_global_post instanceof WP_Post ) {
+			setup_postdata( $original_global_post );
+		}
+	} else {
+		unset( $GLOBALS['post'] );
+	}
 
 	return [
 		'html'      => ob_get_clean(),
 		'total'     => (int) $query->found_posts,
 		'page'      => $page,
-		'max_pages' => (int) $query->max_num_pages,
+		'max_pages' => min( 200, (int) $query->max_num_pages ),
 		'model'     => $model,
 	];
 }
@@ -314,14 +587,22 @@ function aomark_listings_render_results( $settings = [] ) {
 	aomark_listings_enqueue_assets();
 
 	$settings = aomark_listings_sanitize_results_settings( $settings );
-	$model    = aomark_listings_get_model( $settings['model_id'] );
+	$model    = aomark_listings_get_model_exact( $settings['model_id'], false );
+	if ( ! $model ) {
+		return '<div class="aomark-listings-empty">' . esc_html__( 'The selected listing type is unavailable.', 'aomark-listings' ) . '</div>';
+	}
+
 	$settings['model_id'] = $model['id'];
-	$rendered = aomark_listings_render_results_inner( $settings, 1 );
-	$id = 'aomark-listings-results-' . wp_unique_id();
+	$page = aomark_listings_request_targets_model( $model ) ? absint( aomark_listings_request_value( 'alm_page', 4 ) ) : 1;
+	$page = max( 1, min( 200, $page ) );
+	$rendered   = aomark_listings_render_results_inner( $settings, $page );
+	$descriptor = aomark_listings_create_signed_descriptor( 'results', $settings );
+	$id         = 'aomark-listings-results-' . wp_unique_id();
+	$map_sync   = ! empty( $settings['taxonomy_filters'] ) || ! empty( $settings['meta_filters'] ) || 'date_desc' !== $settings['sort'];
 
 	ob_start();
 	?>
-	<div id="<?php echo esc_attr( $id ); ?>" class="aomark-listings-results aomark-listings-results--<?php echo esc_attr( $settings['skin'] ); ?>" data-ajax="<?php echo esc_attr( $settings['ajax'] ); ?>" data-config="<?php echo esc_attr( wp_json_encode( $settings ) ); ?>">
+	<div id="<?php echo esc_attr( $id ); ?>" class="aomark-listings-results aomark-listings-results--<?php echo esc_attr( $settings['skin'] ); ?>" data-model-id="<?php echo esc_attr( $model['id'] ); ?>" data-ajax="<?php echo esc_attr( $settings['ajax'] ); ?>" data-map-sync="<?php echo $map_sync ? 'yes' : 'no'; ?>" data-config="<?php echo esc_attr( wp_json_encode( $descriptor ) ); ?>">
 		<div data-aomark-listings-results-inner>
 			<?php echo $rendered['html']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</div>
@@ -336,19 +617,68 @@ function aomark_listings_render_results( $settings = [] ) {
  * An explicit listing ID is useful for standalone pages and editor previews;
  * otherwise widgets keep the normal current-post template behavior.
  *
- * @param array $settings Widget settings.
+ * @param array      $settings Widget settings.
+ * @param array|null $model    Resolved listing model.
  * @return int
  */
-function aomark_listings_context_post_id( $settings = [] ) {
-	$post_id = absint( $settings['post_id'] ?? 0 );
+function aomark_listings_context_post_id( $settings = [], $model = null ) {
+	if ( ! $model ) {
+		$model_id = sanitize_key( (string) ( $settings['model_id'] ?? '' ) );
+		$model    = aomark_listings_get_model_exact( $model_id, '' === $model_id );
+	}
 
-	return $post_id ?: absint( get_the_ID() );
+	if ( ! $model ) {
+		return 0;
+	}
+
+	$post_id = absint( $settings['post_id'] ?? 0 );
+	$post_id = $post_id ?: absint( get_the_ID() );
+	$post    = $post_id ? get_post( $post_id ) : null;
+
+	if ( ! $post || $model['post_type'] !== $post->post_type ) {
+		return 0;
+	}
+
+	if ( 'publish' === $post->post_status ) {
+		if ( post_password_required( $post ) && ! current_user_can( 'edit_post', $post_id ) ) {
+			return 0;
+		}
+
+		return $post_id;
+	}
+
+	if ( current_user_can( 'read_post', $post_id ) || current_user_can( 'edit_post', $post_id ) ) {
+		return $post_id;
+	}
+
+	return 0;
+}
+
+/**
+ * Resolve a possibly composite field reference against exactly one model.
+ *
+ * @param array  $model     Listing model.
+ * @param string $reference Field ID or model:field reference.
+ * @return array|null
+ */
+function aomark_listings_resolve_model_field( $model, $reference ) {
+	$reference = sanitize_text_field( (string) $reference );
+	if ( false !== strpos( $reference, ':' ) ) {
+		$parts = explode( ':', $reference, 2 );
+		if ( sanitize_key( $parts[0] ) !== $model['id'] ) {
+			return null;
+		}
+		$reference = $parts[1];
+	}
+
+	return aomark_listings_get_field( $model, sanitize_key( $reference ) );
 }
 
 function aomark_listings_render_field( $settings = [] ) {
-	$model = aomark_listings_get_model( $settings['model_id'] ?? '' );
-	$field = aomark_listings_get_field( $model, $settings['field_id'] ?? '' );
-	$post_id = aomark_listings_context_post_id( $settings );
+	$model_id = sanitize_key( (string) ( $settings['model_id'] ?? '' ) );
+	$model = aomark_listings_get_model_exact( $model_id, '' === $model_id );
+	$field = $model ? aomark_listings_resolve_model_field( $model, $settings['field_id'] ?? '' ) : null;
+	$post_id = aomark_listings_context_post_id( $settings, $model );
 
 	if ( ! $post_id || ! $field ) {
 		return '';
@@ -414,10 +744,11 @@ function aomark_listings_render_field( $settings = [] ) {
 }
 
 function aomark_listings_render_meta( $settings = [] ) {
-	$model = aomark_listings_get_model( $settings['model_id'] ?? '' );
-	$post_id = aomark_listings_context_post_id( $settings );
+	$model_id = sanitize_key( (string) ( $settings['model_id'] ?? '' ) );
+	$model = aomark_listings_get_model_exact( $model_id, '' === $model_id );
+	$post_id = aomark_listings_context_post_id( $settings, $model );
 
-	if ( ! $post_id ) {
+	if ( ! $model || ! $post_id ) {
 		return '';
 	}
 
@@ -462,11 +793,12 @@ function aomark_listings_render_meta( $settings = [] ) {
 function aomark_listings_render_gallery( $settings = [] ) {
 	aomark_listings_enqueue_assets();
 
-	$model = aomark_listings_get_model( $settings['model_id'] ?? '' );
-	$field = aomark_listings_get_field( $model, $settings['field_id'] ?? '' );
-	$post_id = aomark_listings_context_post_id( $settings );
+	$model_id = sanitize_key( (string) ( $settings['model_id'] ?? '' ) );
+	$model = aomark_listings_get_model_exact( $model_id, '' === $model_id );
+	$field = $model ? aomark_listings_resolve_model_field( $model, $settings['field_id'] ?? '' ) : null;
+	$post_id = aomark_listings_context_post_id( $settings, $model );
 
-	if ( ! $post_id || ! $field ) {
+	if ( ! $post_id || ! $field || ! in_array( $field['type'], [ 'image', 'gallery' ], true ) ) {
 		return '';
 	}
 
@@ -523,79 +855,260 @@ function aomark_listings_render_map( $settings = [] ) {
 			'popup_address'    => 'yes',
 		]
 	);
-
-	$model = aomark_listings_get_model( $settings['model_id'] );
+	$model_id = sanitize_key( (string) $settings['model_id'] );
+	$model    = aomark_listings_get_model_exact( $model_id, '' === $model_id );
+	$source   = in_array( (string) $settings['source'], [ 'query', 'current', 'single' ], true ) ? (string) $settings['source'] : 'query';
+	$settings['model_id']         = $model ? $model['id'] : $model_id;
+	$settings['source']           = $source;
+	$settings['read_url_filters'] = aomark_listings_switch_setting( $settings, 'read_url_filters', 'yes' );
+	$settings['map_limit']        = max( 1, min( 500, absint( $settings['map_limit'] ) ) );
+	$settings['currency']         = substr( sanitize_text_field( (string) ( $settings['currency'] ?? '$' ) ), 0, 12 );
+	$settings['decimals']         = min( 4, absint( $settings['decimals'] ?? 0 ) );
+	$settings['popup_image']      = aomark_listings_switch_setting( $settings, 'popup_image', 'yes' );
+	$settings['popup_price']      = aomark_listings_switch_setting( $settings, 'popup_price', 'yes' );
+	$settings['popup_address']    = aomark_listings_switch_setting( $settings, 'popup_address', 'yes' );
 	$items = [];
 
-	if ( in_array( $settings['source'], [ 'current', 'single' ], true ) ) {
-		$post_id = aomark_listings_context_post_id( $settings );
+	if ( $model && in_array( $source, [ 'current', 'single' ], true ) ) {
+		$post_id = aomark_listings_context_post_id( $settings, $model );
 		$location = $post_id ? aomark_listings_location_value( $post_id, $model ) : false;
 		if ( $location ) {
 			$price_field = aomark_listings_get_first_field_by_type( $model, 'price' );
-			$items[] = [
+			$item = [
 				'id'      => $post_id,
 				'title'   => html_entity_decode( get_the_title( $post_id ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
 				'url'     => get_permalink( $post_id ),
-				'image'   => get_the_post_thumbnail_url( $post_id, 'medium' ) ?: '',
 				'lat'     => $location['lat'],
 				'lng'     => $location['lng'],
-				'address' => $location['address'],
-				'price'   => $price_field ? aomark_listings_field_display_value( $post_id, $price_field, $settings ) : '',
 			];
+
+			if ( 'yes' === $settings['popup_image'] ) {
+				$item['image'] = get_the_post_thumbnail_url( $post_id, 'medium' ) ?: '';
+			}
+			if ( 'yes' === $settings['popup_address'] ) {
+				$item['address'] = $location['address'];
+			}
+			if ( 'yes' === $settings['popup_price'] ) {
+				$item['price'] = $price_field ? aomark_listings_field_display_value( $post_id, $price_field, $settings ) : '';
+			}
+
+			$items[] = $item;
 		}
-	} else {
-		$settings['model_id'] = $model['id'];
+	} elseif ( $model ) {
 		$items = aomark_listings_get_map_items( $settings );
 	}
 
-	if ( empty( $items ) ) {
-		return '<div class="aomark-listings-empty">' . esc_html( $settings['empty_message'] ) . '</div>';
+	$map_id = 'aomark-listings-map-' . wp_unique_id();
+	if ( is_array( $settings['height'] ) && isset( $settings['height']['size'], $settings['height']['unit'] ) ) {
+		$height_size = max( 120, min( 1600, absint( $settings['height']['size'] ) ) );
+		$height_unit = in_array( $settings['height']['unit'], [ 'px', 'vh' ], true ) ? $settings['height']['unit'] : 'px';
+		$height      = $height_size . $height_unit;
+	} else {
+		$height = max( 120, min( 1600, absint( $settings['height'] ) ) ) . 'px';
 	}
 
-	$map_id = 'aomark-listings-map-' . wp_unique_id();
-	$height = is_array( $settings['height'] ) && isset( $settings['height']['size'], $settings['height']['unit'] ) ? $settings['height']['size'] . $settings['height']['unit'] : absint( $settings['height'] ) . 'px';
+	$query_map = 'query' === $source;
+	$ajax_descriptor = null;
+	if ( $query_map && $model ) {
+		$ajax_descriptor = aomark_listings_create_signed_descriptor(
+			'map',
+			[
+				'model_id'         => $model['id'],
+				'read_url_filters' => $settings['read_url_filters'],
+				'map_limit'        => $settings['map_limit'],
+				'popup_image'      => $settings['popup_image'],
+				'popup_price'      => $settings['popup_price'],
+				'popup_address'    => $settings['popup_address'],
+				'currency'         => $settings['currency'],
+				'decimals'         => $settings['decimals'],
+			]
+		);
+	}
+
 	$config = [
 		'id'              => $map_id,
 		'items'           => $items,
 		'zoom'            => max( 2, min( 18, absint( $settings['zoom'] ) ) ),
-		'queryMap'        => ! in_array( $settings['source'], [ 'current', 'single' ], true ),
+		'queryMap'        => $query_map,
 		'fitBounds'       => 'yes' === aomark_listings_switch_setting( $settings, 'fit_bounds', 'yes' ),
 		'scrollWheelZoom' => 'yes' === aomark_listings_switch_setting( $settings, 'scroll_wheel_zoom', 'no' ),
 		'zoomControl'     => 'yes' === aomark_listings_switch_setting( $settings, 'zoom_control', 'yes' ),
 		'dragging'        => 'yes' === aomark_listings_switch_setting( $settings, 'dragging', 'yes' ),
-		'popupImage'      => 'yes' === aomark_listings_switch_setting( $settings, 'popup_image', 'yes' ),
-		'popupPrice'      => 'yes' === aomark_listings_switch_setting( $settings, 'popup_price', 'yes' ),
-		'popupAddress'    => 'yes' === aomark_listings_switch_setting( $settings, 'popup_address', 'yes' ),
+		'popupImage'      => 'yes' === $settings['popup_image'],
+		'popupPrice'      => 'yes' === $settings['popup_price'],
+		'popupAddress'    => 'yes' === $settings['popup_address'],
 	];
+	if ( $ajax_descriptor ) {
+		$config['ajaxDescriptor'] = $ajax_descriptor;
+	}
+
+	$empty_message = substr( sanitize_text_field( (string) $settings['empty_message'] ), 0, 300 );
 
 	ob_start();
 	?>
-	<div class="aomark-listings-map-wrap">
-		<div id="<?php echo esc_attr( $map_id ); ?>" class="aomark-listings-map" style="--alm-map-height:<?php echo esc_attr( $height ); ?>" data-map-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>"></div>
+	<div class="aomark-listings-map-wrap<?php echo empty( $items ) ? ' is-empty' : ''; ?>">
+		<div id="<?php echo esc_attr( $map_id ); ?>" class="aomark-listings-map" style="--alm-map-height:<?php echo esc_attr( $height ); ?>" data-model-id="<?php echo esc_attr( $model ? $model['id'] : $model_id ); ?>" data-query-map="<?php echo $query_map ? 'yes' : 'no'; ?>" data-map-query="<?php echo esc_attr( $ajax_descriptor ? wp_json_encode( $ajax_descriptor ) : '' ); ?>" data-map-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>" aria-label="<?php esc_attr_e( 'Listings map', 'aomark-listings' ); ?>"<?php echo empty( $items ) ? ' hidden aria-hidden="true"' : ''; ?>></div>
+		<div class="aomark-listings-empty" data-aomark-listings-map-empty<?php echo empty( $items ) ? '' : ' hidden'; ?>><?php echo esc_html( $empty_message ); ?></div>
 	</div>
 	<?php
 	return ob_get_clean();
 }
 
+/**
+ * Parse only public filter keys declared by the selected model.
+ *
+ * @param string $raw   URL-encoded filter string.
+ * @param array  $model Listing model.
+ * @return array
+ */
+function aomark_listings_sanitize_ajax_filters( $raw, $model ) {
+	$parsed = [];
+	parse_str( (string) $raw, $parsed );
+	$filters = [];
+	$active  = 0;
+	$scalar  = static function ( $value, $max_length = 200 ) {
+		if ( is_array( $value ) ) {
+			$value = reset( $value );
+		}
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		return substr( sanitize_text_field( (string) $value ), 0, $max_length );
+	};
+	$request_model = $scalar( $parsed['alm_model'] ?? '', 100 );
+	if ( '' !== $request_model && $request_model !== $model['id'] ) {
+		return [];
+	}
+
+	$keyword = $scalar( $parsed['alm_keyword'] ?? '', 200 );
+	if ( '' !== $keyword ) {
+		$filters['alm_keyword'] = $keyword;
+		++$active;
+	}
+
+	$sort = sanitize_key( $scalar( $parsed['alm_sort'] ?? '', 20 ) );
+	if ( in_array( $sort, [ 'date_desc', 'date_asc', 'title_asc', 'title_desc', 'price_asc', 'price_desc' ], true ) ) {
+		$filters['alm_sort'] = $sort;
+	}
+
+	foreach ( aomark_listings_get_filterable_taxonomies( $model ) as $taxonomy ) {
+		if ( $active >= 20 ) {
+			break;
+		}
+
+		$key    = aomark_listings_filter_param( $taxonomy['id'] );
+		$values = $parsed[ $key ] ?? [];
+		$values = is_array( $values ) ? array_slice( $values, 0, 20 ) : [ $values ];
+		$terms  = [];
+		foreach ( $values as $value ) {
+			$value = sanitize_title( $scalar( $value, 100 ) );
+			if ( '' !== $value ) {
+				$terms[] = $value;
+			}
+		}
+		$terms = array_values( array_unique( $terms ) );
+		if ( ! empty( $terms ) ) {
+			$filters[ $key ] = $terms;
+			++$active;
+		}
+	}
+
+	foreach ( aomark_listings_get_filterable_fields( $model ) as $field ) {
+		if ( $active >= 20 ) {
+			break;
+		}
+
+		if ( in_array( $field['type'], [ 'number', 'price' ], true ) ) {
+			foreach ( [ 'alm_min_' . $field['id'], 'alm_max_' . $field['id'] ] as $key ) {
+				$value = $scalar( $parsed[ $key ] ?? '', 50 );
+				if ( '' !== $value && null !== aomark_listings_numeric_value( $value ) ) {
+					$filters[ $key ] = $value;
+					++$active;
+				}
+				if ( $active >= 20 ) {
+					break 2;
+				}
+			}
+		} else {
+			$key   = aomark_listings_filter_param( 'field_' . $field['id'] );
+			$value = $scalar( $parsed[ $key ] ?? '', 200 );
+			if ( '' !== $value ) {
+				$filters[ $key ] = $value;
+				++$active;
+			}
+		}
+	}
+
+	return $filters;
+}
+
 function aomark_listings_ajax_results() {
-	check_ajax_referer( 'aomark_listings_results', 'nonce' );
+	$nonce = isset( $_POST['nonce'] ) && is_scalar( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+	if ( ! wp_verify_nonce( $nonce, 'aomark_listings_results' ) ) {
+		wp_send_json_error( [ 'message' => __( 'The listings request could not be verified.', 'aomark-listings' ) ], 403 );
+	}
 
-	$page = isset( $_POST['page'] ) ? absint( wp_unslash( $_POST['page'] ) ) : 1;
-	$settings_raw = isset( $_POST['settings'] ) ? wp_unslash( $_POST['settings'] ) : '{}';
-	$settings = json_decode( (string) $settings_raw, true );
-	$settings = is_array( $settings ) ? $settings : [];
+	$page = isset( $_POST['page'] ) && is_scalar( $_POST['page'] ) ? absint( wp_unslash( $_POST['page'] ) ) : 1;
+	$page = max( 1, min( 200, $page ) );
+	$settings_raw = isset( $_POST['settings'] ) && is_scalar( $_POST['settings'] ) ? (string) wp_unslash( $_POST['settings'] ) : '';
+	if ( '' === $settings_raw || strlen( $settings_raw ) > 45000 ) {
+		wp_send_json_error( [ 'message' => __( 'Invalid listings configuration.', 'aomark-listings' ) ], 400 );
+	}
 
-	$filters_raw = isset( $_POST['filters'] ) ? (string) wp_unslash( $_POST['filters'] ) : '';
-	parse_str( $filters_raw, $filters );
-	if ( isset( $_POST['sort'] ) && '' !== $_POST['sort'] ) {
-		$filters['alm_sort'] = sanitize_key( wp_unslash( $_POST['sort'] ) );
+	$descriptor = json_decode( $settings_raw, true, 10 );
+	$payload    = aomark_listings_verify_signed_descriptor( $descriptor, 'results' );
+	if ( false === $payload ) {
+		wp_send_json_error( [ 'message' => __( 'Invalid or expired listings configuration.', 'aomark-listings' ) ], 400 );
+	}
+
+	$settings = aomark_listings_sanitize_results_settings( $payload );
+	$model    = aomark_listings_get_model_exact( $settings['model_id'], false );
+	if ( ! $model ) {
+		wp_send_json_error( [ 'message' => __( 'The selected listing type is unavailable.', 'aomark-listings' ) ], 400 );
+	}
+
+	$filters_raw = isset( $_POST['filters'] ) && is_scalar( $_POST['filters'] ) ? (string) wp_unslash( $_POST['filters'] ) : '';
+	if ( strlen( $filters_raw ) > 8192 ) {
+		wp_send_json_error( [ 'message' => __( 'Too many listing filters were supplied.', 'aomark-listings' ) ], 400 );
+	}
+	$filters = aomark_listings_sanitize_ajax_filters( $filters_raw, $model );
+
+	$sort = isset( $_POST['sort'] ) && is_scalar( $_POST['sort'] ) ? sanitize_key( wp_unslash( $_POST['sort'] ) ) : '';
+	if ( in_array( $sort, [ 'date_desc', 'date_asc', 'title_asc', 'title_desc', 'price_asc', 'price_desc' ], true ) ) {
+		$settings['sort']    = $sort;
+		$filters['alm_sort'] = $sort;
 	}
 
 	$old_get = $_GET;
-	$_GET = $filters;
-	$rendered = aomark_listings_render_results_inner( $settings, $page );
-	$map_items = aomark_listings_get_map_items( array_merge( $settings, [ 'map_limit' => 300 ] ) );
-	$_GET = $old_get;
+	$_GET    = $filters;
+	try {
+		$rendered  = aomark_listings_render_results_inner( $settings, $page );
+		$map_items = [];
+		$map_raw   = isset( $_POST['map_descriptor'] ) && is_scalar( $_POST['map_descriptor'] ) ? (string) wp_unslash( $_POST['map_descriptor'] ) : '';
+		if ( '' !== $map_raw && strlen( $map_raw ) <= 45000 ) {
+			$map_descriptor = json_decode( $map_raw, true, 10 );
+			$map_payload    = aomark_listings_verify_signed_descriptor( $map_descriptor, 'map' );
+			$map_model_id   = is_array( $map_payload ) ? sanitize_key( (string) ( $map_payload['model_id'] ?? '' ) ) : '';
+			if ( $model['id'] === $map_model_id ) {
+				$map_settings = array_merge(
+					$settings,
+					[
+						'read_url_filters' => 'yes' === ( $map_payload['read_url_filters'] ?? 'yes' ) ? 'yes' : 'no',
+						'map_limit'        => max( 1, min( 500, absint( $map_payload['map_limit'] ?? 200 ) ) ),
+						'popup_image'      => 'yes' === ( $map_payload['popup_image'] ?? 'yes' ) ? 'yes' : 'no',
+						'popup_price'      => 'yes' === ( $map_payload['popup_price'] ?? 'yes' ) ? 'yes' : 'no',
+						'popup_address'    => 'yes' === ( $map_payload['popup_address'] ?? 'yes' ) ? 'yes' : 'no',
+						'currency'         => substr( sanitize_text_field( (string) ( $map_payload['currency'] ?? '$' ) ), 0, 12 ),
+						'decimals'         => min( 4, absint( $map_payload['decimals'] ?? 0 ) ),
+					]
+				);
+				$map_items = aomark_listings_get_map_items( $map_settings );
+			}
+		}
+	} finally {
+		$_GET = $old_get;
+	}
 
 	wp_send_json_success(
 		[
