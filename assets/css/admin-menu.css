@@ -1,0 +1,14 @@
+#adminmenu .toplevel_page_aomark-listings .wp-menu-image img {
+	display: block;
+	height: 20px;
+	margin: 0 auto;
+	object-fit: contain;
+	opacity: 0.85;
+	padding: 7px 0 0;
+	width: 20px;
+}
+
+#adminmenu .toplevel_page_aomark-listings:hover .wp-menu-image img,
+#adminmenu .toplevel_page_aomark-listings.current .wp-menu-image img {
+	opacity: 1;
+}

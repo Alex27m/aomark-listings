@@ -1,0 +1,535 @@
+.aomark-listings-filter,
+.aomark-listings-results,
+.aomark-listings-field,
+.aomark-listings-meta,
+.aomark-listings-gallery,
+.aomark-listings-map-wrap,
+.aomark-listings-empty {
+	--alm-ink: #1f2933;
+	--alm-muted: #687482;
+	--alm-border: #d9e0e8;
+	--alm-border-soft: #edf1f5;
+	--alm-surface: #fff;
+	--alm-soft: #f8fafc;
+	--alm-accent: #a855f7;
+	--alm-accent-2: #c026d3;
+	--alm-action: #a855f7;
+	color: var(--alm-ink);
+	font-family: inherit;
+}
+
+/* Filter */
+.aomark-listings-filter__form {
+	align-items: stretch;
+	background: var(--alm-surface);
+	border: 1px solid var(--alm-border);
+	border-radius: 6px;
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 10px;
+	padding: 12px;
+}
+
+.aomark-listings-filter__field {
+	flex: 1 1 auto;
+	min-width: 180px;
+}
+
+.aomark-listings-filter__field input,
+.aomark-listings-filter__field select {
+	background: #fff;
+	border: 1px solid var(--alm-border);
+	border-radius: 4px;
+	box-shadow: none;
+	color: inherit;
+	font: inherit;
+	margin: 0;
+	min-height: 44px;
+	outline: 0;
+	padding: 0 12px;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	width: 100%;
+}
+
+.aomark-listings-filter__field input:focus,
+.aomark-listings-filter__field select:focus,
+.aomark-listings-results__sort select:focus {
+	border-color: var(--alm-accent);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--alm-accent) 22%, transparent);
+	outline: none;
+}
+
+.aomark-listings-filter__field--button,
+.aomark-listings-filter__field--reset {
+	flex: 0 0 auto;
+	min-width: 0;
+}
+
+.aomark-listings-button,
+.aomark-listings-reset,
+.aomark-listings-card__button,
+.aomark-listings-load-more {
+	align-items: center;
+	border-radius: 4px;
+	cursor: pointer;
+	display: inline-flex;
+	font: inherit;
+	font-weight: 700;
+	justify-content: center;
+	min-height: 44px;
+	padding: 0 18px;
+	text-decoration: none;
+	transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.aomark-listings-button,
+.aomark-listings-card__button,
+.aomark-listings-load-more {
+	background-color: var(--alm-accent);
+	border: 1px solid transparent;
+	color: #fff !important;
+}
+
+.aomark-listings-button:hover,
+.aomark-listings-button:focus,
+.aomark-listings-card__button:hover,
+.aomark-listings-card__button:focus,
+.aomark-listings-load-more:hover,
+.aomark-listings-load-more:focus {
+	background-color: var(--alm-accent-2);
+	color: #fff !important;
+}
+
+.aomark-listings-reset {
+	background: var(--alm-surface);
+	border: 1px solid var(--alm-border);
+	color: var(--alm-ink);
+}
+
+.aomark-listings-reset:hover,
+.aomark-listings-reset:focus {
+	background: var(--alm-soft);
+	border-color: var(--alm-muted);
+	color: var(--alm-ink);
+}
+
+/* Results and toolbar */
+.aomark-listings-results {
+	position: relative;
+}
+
+.aomark-listings-results__filter {
+	margin-bottom: 22px;
+}
+
+.aomark-listings-results__bar {
+	align-items: center;
+	display: flex;
+	gap: 18px;
+	justify-content: space-between;
+	margin: 0 0 18px;
+}
+
+.aomark-listings-results__count {
+	color: var(--alm-muted);
+	font-size: 14px;
+}
+
+.aomark-listings-results__sort {
+	align-items: center;
+	color: var(--alm-muted);
+	display: inline-flex;
+	font-size: 14px;
+	gap: 10px;
+	margin: 0;
+}
+
+.aomark-listings-results__sort select {
+	background: #fff;
+	border: 1px solid var(--alm-border);
+	border-radius: 4px;
+	box-shadow: none;
+	color: var(--alm-ink);
+	font: inherit;
+	margin: 0;
+	min-height: 40px;
+	padding: 0 34px 0 12px;
+}
+
+.aomark-listings-grid {
+	display: grid;
+	gap: 22px;
+	grid-template-columns: repeat(var(--aomark-listings-columns, 3), minmax(0, 1fr));
+}
+
+.aomark-listings-results.is-loading [data-aomark-listings-results-inner] {
+	opacity: 0.55;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+}
+
+.aomark-listings-results.is-loading::after {
+	animation: aomark-listings-spin 0.7s linear infinite;
+	border: 3px solid color-mix(in srgb, var(--alm-accent) 20%, transparent);
+	border-radius: 50%;
+	border-top-color: var(--alm-accent);
+	content: "";
+	height: 28px;
+	left: 50%;
+	position: absolute;
+	top: 70px;
+	width: 28px;
+	z-index: 3;
+}
+
+@keyframes aomark-listings-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* Result cards */
+.aomark-listings-card {
+	background: var(--alm-surface);
+	border: 1px solid var(--alm-border);
+	border-radius: 6px;
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	overflow: hidden;
+	transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.aomark-listings-card:hover {
+	border-color: #b8cedd;
+	box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+	transform: translateY(-2px);
+}
+
+.aomark-listings-card__image {
+	aspect-ratio: 4 / 3;
+	background: #f2f5f8;
+	display: block;
+	overflow: hidden;
+	position: relative;
+	text-decoration: none;
+}
+
+.aomark-listings-card__image img {
+	display: block;
+	height: 100%;
+	object-fit: cover;
+	transition: opacity 0.24s ease, transform 0.24s ease;
+	width: 100%;
+}
+
+.aomark-listings-card:hover .aomark-listings-card__image img {
+	transform: scale(1.035);
+}
+
+.aomark-listings-card__placeholder {
+	background: #f2f5f8;
+	display: block;
+	height: 100%;
+	width: 100%;
+}
+
+.aomark-listings-card__body {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 10px;
+	padding: 16px;
+}
+
+.aomark-listings-card__title {
+	font-size: 18px;
+	line-height: 1.25;
+	margin: 0;
+}
+
+.aomark-listings-card__title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.aomark-listings-card__title a:hover {
+	color: var(--alm-accent);
+}
+
+.aomark-listings-card__price {
+	color: var(--alm-accent);
+	font-size: 16px;
+	font-weight: 800;
+}
+
+.aomark-listings-card__meta {
+	color: var(--alm-muted);
+	display: flex;
+	flex-wrap: wrap;
+	font-size: 13px;
+	gap: 8px;
+}
+
+.aomark-listings-card__meta span {
+	background: var(--alm-soft);
+	border: 1px solid var(--alm-border-soft);
+	border-radius: 999px;
+	line-height: 1.2;
+	padding: 6px 9px;
+}
+
+.aomark-listings-card__meta strong {
+	color: var(--alm-ink);
+}
+
+.aomark-listings-card__button {
+	align-self: flex-start;
+	font-size: 13px;
+	margin-top: auto;
+	min-height: 38px;
+	padding: 0 14px;
+}
+
+.aomark-listings-results--list .aomark-listings-card {
+	display: grid;
+	grid-template-columns: minmax(160px, var(--alm-list-image-width, 32%)) minmax(0, 1fr);
+}
+
+.aomark-listings-results--list .aomark-listings-card--no-image {
+	display: flex;
+}
+
+.aomark-listings-results--list .aomark-listings-card__image {
+	aspect-ratio: auto;
+	height: 100%;
+	min-height: 180px;
+}
+
+/* Pagination, actions and empty states */
+.aomark-listings-pagination,
+.aomark-listings-results__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	justify-content: center;
+	margin-top: 26px;
+}
+
+.aomark-listings-pagination button {
+	background: #fff;
+	border: 1px solid var(--alm-border);
+	border-radius: 4px;
+	color: var(--alm-ink);
+	cursor: pointer;
+	font: inherit;
+	min-height: 38px;
+	min-width: 38px;
+	padding: 0 12px;
+}
+
+.aomark-listings-pagination button.is-active,
+.aomark-listings-pagination button:not(:disabled):hover {
+	background: var(--alm-action);
+	border-color: var(--alm-action);
+	color: #fff;
+}
+
+.aomark-listings-pagination button:disabled {
+	cursor: default;
+	opacity: 0.65;
+}
+
+.aomark-listings-empty {
+	background: var(--alm-soft);
+	border: 1px solid var(--alm-border);
+	border-radius: 6px;
+	color: var(--alm-muted);
+	padding: 28px;
+	text-align: center;
+}
+
+/* Dynamic field */
+.aomark-listings-field {
+	align-items: baseline;
+	display: flex;
+	flex-wrap: wrap;
+	font-family: inherit;
+	gap: 8px;
+	margin: 0;
+}
+
+span.aomark-listings-field {
+	display: inline-flex;
+}
+
+.aomark-listings-field--stacked {
+	align-items: stretch;
+	flex-direction: column;
+}
+
+.aomark-listings-field__label {
+	color: var(--alm-muted);
+}
+
+.aomark-listings-field__value a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.aomark-listings-field__prefix {
+	margin-inline-end: 0.2em;
+}
+
+.aomark-listings-field__suffix {
+	margin-inline-start: 0.2em;
+}
+
+/* Meta */
+.aomark-listings-meta {
+	display: grid;
+	gap: 8px;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.aomark-listings-meta__row {
+	align-items: center;
+	border: 0;
+	border-bottom: 1px solid var(--alm-border-soft);
+	display: flex;
+	gap: 14px;
+	justify-content: space-between;
+	padding: 8px 0;
+}
+
+.aomark-listings-meta__label {
+	color: var(--alm-muted);
+}
+
+.aomark-listings-meta__value {
+	color: var(--alm-ink);
+}
+
+/* Gallery */
+.aomark-listings-gallery {
+	display: grid;
+	gap: 10px;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.aomark-listings-gallery__item {
+	aspect-ratio: 1 / 1;
+	background: #f2f5f8;
+	border-radius: 4px;
+	display: block;
+	overflow: hidden;
+}
+
+.aomark-listings-gallery__item img {
+	display: block;
+	height: 100%;
+	object-fit: cover;
+	transition: filter 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+	width: 100%;
+}
+
+/* Map */
+.aomark-listings-map {
+	background: #eef3f7;
+	border: 1px solid var(--alm-border);
+	border-radius: 6px;
+	height: var(--alm-map-height, 480px);
+	min-height: 220px;
+	width: 100%;
+}
+
+.aomark-listings-popup {
+	color: var(--alm-ink);
+	width: 210px;
+}
+
+.aomark-listings-popup img {
+	border-radius: 4px;
+	display: block;
+	height: 110px;
+	margin: 0 0 8px;
+	object-fit: cover;
+	width: 100%;
+}
+
+.aomark-listings-popup strong {
+	display: block;
+	margin-bottom: 4px;
+}
+
+.aomark-listings-popup a {
+	color: var(--alm-accent);
+	text-decoration: none;
+}
+
+.aomark-listings-popup__price {
+	font-weight: 700;
+	margin-bottom: 3px;
+}
+
+.aomark-listings-popup__address {
+	display: block;
+}
+
+@media (max-width: 1024px) {
+	.aomark-listings-results--list .aomark-listings-card {
+		grid-template-columns: minmax(150px, var(--alm-list-image-width, 180px)) minmax(0, 1fr);
+	}
+}
+
+@media (max-width: 640px) {
+	.aomark-listings-results__bar {
+		display: block;
+	}
+
+	.aomark-listings-results__sort {
+		margin-top: 12px;
+		width: 100%;
+	}
+
+	.aomark-listings-results__sort select {
+		width: 100%;
+	}
+
+	.aomark-listings-results--list .aomark-listings-card {
+		display: flex;
+	}
+
+	.aomark-listings-results--list .aomark-listings-card__image {
+		aspect-ratio: 4 / 3;
+		height: auto;
+	}
+
+	.aomark-listings-filter__field {
+		min-width: 100%;
+	}
+
+	.aomark-listings-filter__field--button,
+	.aomark-listings-filter__field--reset,
+	.aomark-listings-button,
+	.aomark-listings-reset {
+		width: 100%;
+	}
+
+	.aomark-listings-gallery {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.aomark-listings-card,
+	.aomark-listings-card__image img,
+	.aomark-listings-button,
+	.aomark-listings-reset,
+	.aomark-listings-card__button,
+	.aomark-listings-load-more,
+	.aomark-listings-gallery__item img {
+		transition-duration: 0.01ms;
+	}
+}

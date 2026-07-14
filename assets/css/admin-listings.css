@@ -1,0 +1,1224 @@
+/**
+ * Aomark Listings admin UI.
+ * Mirrors the Aomark Suite dark-glass design system.
+ */
+
+.aomark-listings-admin,
+.aomark-listings-metabox-shell {
+	--aomark-bg: #1a1f2e;
+	--aomark-surface: rgba(30, 41, 59, 0.85);
+	--aomark-surface-2: rgba(30, 41, 59, 0.65);
+	--aomark-border: rgba(255, 255, 255, 0.12);
+	--aomark-border-soft: rgba(255, 255, 255, 0.08);
+	--aomark-text: rgba(255, 255, 255, 0.95);
+	--aomark-muted: rgba(255, 255, 255, 0.75);
+	--aomark-accent: #a855f7;
+	--aomark-accent-2: #c026d3;
+	--aomark-focus: rgba(168, 85, 247, 0.35);
+	--aomark-success: #10b981;
+	--aomark-error: #ef4444;
+	--aomark-warning: #f59e0b;
+	--aomark-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+	--aomark-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+	--aomark-shadow-glow: 0 0 16px rgba(168, 85, 247, 0.25);
+	--aomark-radius: 14px;
+	--aomark-radius-pill: 999px;
+}
+
+.aomark-listings-admin *,
+.aomark-listings-metabox-shell * {
+	box-sizing: border-box;
+}
+
+/* Page shell and header */
+.aomark-listings-admin {
+	margin: 20px 20px 20px 0;
+	max-width: 1500px;
+}
+
+.aomark-listings-page {
+	background:
+		radial-gradient(ellipse at top, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+		radial-gradient(ellipse at bottom right, rgba(192, 38, 211, 0.06) 0%, transparent 50%),
+		var(--aomark-bg);
+	border-radius: var(--aomark-radius);
+	margin: 20px auto;
+	min-height: 540px;
+	padding: 32px;
+}
+
+.aomark-listings-admin-header {
+	align-items: center;
+	background: transparent;
+	color: #fff;
+	display: flex;
+	gap: 24px;
+	justify-content: space-between;
+	margin: 0 0 24px;
+	padding: 0;
+}
+
+.aomark-listings-brand,
+.aomark-listings-header-actions {
+	align-items: center;
+	display: flex;
+	gap: 14px;
+	min-width: 0;
+}
+
+.aomark-listings-header-actions {
+	justify-content: flex-end;
+}
+
+.aomark-listings-brand h1 {
+	color: var(--aomark-text);
+	font-size: 28px;
+	font-weight: 600;
+	line-height: 1.2;
+	margin: 0 0 8px;
+}
+
+.aomark-listings-brand p {
+	color: var(--aomark-muted);
+	font-size: 14px;
+	margin: 0;
+}
+
+.aomark-listings-brand-logo-link {
+	border-radius: var(--aomark-radius);
+	display: inline-flex;
+	line-height: 0;
+}
+
+.aomark-listings-brand-logo-link:focus {
+	box-shadow: 0 0 0 3px var(--aomark-focus);
+	outline: none;
+}
+
+.aomark-listings-brand-logo {
+	display: block;
+	height: 44px;
+	max-width: 140px;
+	object-fit: contain;
+	width: auto;
+}
+
+/* Notices */
+.aomark-listings-admin .notice,
+.aomark-listings-admin div.updated,
+.aomark-listings-admin div.error {
+	background: var(--aomark-surface);
+	border: 1px solid var(--aomark-border);
+	border-left: 4px solid var(--aomark-accent);
+	box-shadow: var(--aomark-shadow-sm);
+	color: var(--aomark-text);
+	margin: 0 0 20px;
+}
+
+.aomark-listings-admin .notice-success {
+	border-left-color: var(--aomark-success);
+}
+
+.aomark-listings-admin .notice-error,
+.aomark-listings-admin div.error {
+	border-left-color: var(--aomark-error);
+}
+
+.aomark-listings-admin .notice p,
+.aomark-listings-admin .notice a {
+	color: var(--aomark-text);
+}
+
+/* Dashboard layout and glass cards */
+.aomark-listings-admin-layout {
+	display: grid;
+	gap: 22px;
+	grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.aomark-listings-admin-panel {
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
+	background: var(--aomark-surface);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius);
+	box-shadow: var(--aomark-shadow);
+	margin: 0 0 20px;
+	padding: 20px;
+	transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.aomark-listings-admin-panel:hover {
+	border-color: rgba(168, 85, 247, 0.3);
+	box-shadow: var(--aomark-shadow), var(--aomark-shadow-glow);
+}
+
+.aomark-listings-admin-panel h2,
+.aomark-listings-admin-panel h3 {
+	color: var(--aomark-text);
+	font-weight: 600;
+	line-height: 1.3;
+	margin: 0;
+}
+
+.aomark-listings-admin-panel h2 {
+	font-size: 20px;
+}
+
+.aomark-listings-admin-panel h3 {
+	font-size: 16px;
+}
+
+.aomark-listings-admin-panel p {
+	color: var(--aomark-muted);
+	line-height: 1.6;
+	margin: 5px 0 0;
+}
+
+.aomark-listings-panel-head {
+	align-items: center;
+	display: flex;
+	gap: 12px;
+	justify-content: space-between;
+	margin: 0 0 16px;
+}
+
+.aomark-listings-panel-head > div {
+	min-width: 0;
+}
+
+/* Model selector */
+.aomark-listings-model-list {
+	margin: 0;
+}
+
+.aomark-listings-model-list li {
+	margin: 0 0 8px;
+}
+
+.aomark-listings-model-list a {
+	background: var(--aomark-surface-2);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius);
+	color: var(--aomark-text);
+	display: block;
+	padding: 14px;
+	text-decoration: none;
+	transition: all 0.3s ease;
+}
+
+.aomark-listings-model-list a:focus,
+.aomark-listings-model-list a:hover {
+	background: var(--aomark-surface);
+	border-color: var(--aomark-accent);
+	box-shadow: 0 4px 12px var(--aomark-focus);
+	outline: none;
+	transform: translateY(-1px);
+}
+
+.aomark-listings-model-list a.is-active {
+	background: linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(192, 38, 211, 0.1));
+	border-color: var(--aomark-accent);
+	box-shadow: inset 3px 0 0 var(--aomark-accent), 0 4px 12px var(--aomark-focus);
+}
+
+.aomark-listings-model-list strong,
+.aomark-listings-model-list span {
+	display: block;
+}
+
+.aomark-listings-model-list strong {
+	font-size: 14px;
+}
+
+.aomark-listings-model-list span {
+	color: var(--aomark-muted);
+	font-size: 12px;
+	margin-top: 4px;
+}
+
+/* Unified controls */
+.aomark-listings-admin .button,
+.aomark-listings-metabox-shell .button {
+	align-items: center;
+	background: var(--aomark-surface-2);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius-pill);
+	box-shadow: none;
+	color: var(--aomark-text);
+	cursor: pointer;
+	display: inline-flex;
+	font-size: 14px;
+	font-weight: 500;
+	gap: 8px;
+	justify-content: center;
+	line-height: 1.4;
+	min-height: 40px;
+	padding: 9px 18px;
+	text-decoration: none;
+	text-shadow: none;
+	transition: all 0.3s ease;
+}
+
+.aomark-listings-admin .button:focus,
+.aomark-listings-admin .button:hover,
+.aomark-listings-metabox-shell .button:focus,
+.aomark-listings-metabox-shell .button:hover {
+	background: var(--aomark-surface);
+	border-color: var(--aomark-accent);
+	box-shadow: 0 4px 12px var(--aomark-focus);
+	color: var(--aomark-accent);
+	outline: none;
+	transform: translateY(-1px);
+}
+
+.aomark-listings-admin .button-primary {
+	background: linear-gradient(135deg, var(--aomark-accent) 0%, var(--aomark-accent-2) 100%);
+	border-color: var(--aomark-accent);
+	box-shadow: 0 4px 12px var(--aomark-focus);
+	color: #fff;
+	font-weight: 600;
+}
+
+.aomark-listings-admin .button-primary:focus,
+.aomark-listings-admin .button-primary:hover {
+	background: linear-gradient(135deg, #b366f8 0%, #d83fd5 100%);
+	border-color: var(--aomark-accent);
+	box-shadow: 0 6px 20px var(--aomark-shadow-glow);
+	color: #fff;
+	transform: translateY(-2px);
+}
+
+.aomark-listings-admin input[type="checkbox"],
+.aomark-listings-metabox-shell input[type="checkbox"] {
+	accent-color: var(--aomark-accent);
+}
+
+.aomark-listings-admin select,
+.aomark-listings-admin textarea,
+.aomark-listings-admin input[type="text"],
+.aomark-listings-metabox-shell select,
+.aomark-listings-metabox-shell textarea,
+.aomark-listings-metabox-shell input[type="text"],
+.aomark-listings-metabox-shell input[type="number"],
+.aomark-listings-metabox-shell input[type="url"],
+.aomark-listings-metabox-shell input[type="email"],
+.aomark-listings-metabox-shell input[type="date"] {
+	background: var(--aomark-surface-2);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius);
+	box-shadow: none;
+	color: var(--aomark-text);
+	min-height: 42px;
+	padding: 9px 14px;
+	transition: all 0.3s ease;
+	width: 100%;
+}
+
+.aomark-listings-admin textarea,
+.aomark-listings-metabox-shell textarea {
+	min-height: 110px;
+}
+
+.aomark-listings-admin select,
+.aomark-listings-metabox-shell select {
+	background-color: #1e293b !important;
+	color: var(--aomark-text) !important;
+	color-scheme: dark;
+}
+
+.aomark-listings-admin select option,
+.aomark-listings-metabox-shell select option {
+	background: #1e293b;
+	color: var(--aomark-text);
+}
+
+.aomark-listings-admin select option:checked,
+.aomark-listings-metabox-shell select option:checked {
+	background: var(--aomark-accent);
+	color: #fff;
+}
+
+.aomark-listings-admin select:focus,
+.aomark-listings-admin textarea:focus,
+.aomark-listings-admin input:focus,
+.aomark-listings-metabox-shell select:focus,
+.aomark-listings-metabox-shell textarea:focus,
+.aomark-listings-metabox-shell input:focus {
+	border-color: var(--aomark-accent);
+	box-shadow: 0 0 0 3px var(--aomark-focus);
+	outline: none;
+}
+
+.aomark-listings-admin input::placeholder,
+.aomark-listings-admin textarea::placeholder,
+.aomark-listings-metabox-shell input::placeholder,
+.aomark-listings-metabox-shell textarea::placeholder {
+	color: var(--aomark-muted);
+	opacity: 0.75;
+}
+
+/* Model editor */
+.aomark-listings-model-editor {
+	overflow: hidden;
+	padding: 0;
+}
+
+.aomark-listings-model-toolbar {
+	align-items: center;
+	background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(192, 38, 211, 0.04));
+	border-bottom: 1px solid var(--aomark-border);
+	display: flex;
+	gap: 16px;
+	justify-content: space-between;
+	padding: 20px;
+}
+
+.aomark-listings-model-toolbar h2 {
+	font-size: 20px;
+}
+
+.aomark-listings-model-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	justify-content: flex-end;
+}
+
+.aomark-listings-model-badges span {
+	background: var(--aomark-surface-2);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius-pill);
+	color: var(--aomark-text);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+	padding: 4px 10px;
+}
+
+/* Suite pill tabs */
+.aomark-listings-tabs,
+.aomark-listings-metabox-tabs {
+	background: transparent;
+	border: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0;
+	padding: 16px 20px 0;
+}
+
+.aomark-listings-tabs button,
+.aomark-listings-metabox-tabs button {
+	align-items: center;
+	background: var(--aomark-surface-2);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius-pill);
+	color: var(--aomark-muted);
+	cursor: pointer;
+	display: inline-flex;
+	font-size: 14px;
+	font-weight: 500;
+	gap: 7px;
+	height: 40px;
+	justify-content: center;
+	padding: 0 16px;
+	text-decoration: none;
+	transition: all 0.3s ease;
+}
+
+.aomark-listings-tabs button:focus,
+.aomark-listings-tabs button:hover,
+.aomark-listings-metabox-tabs button:focus,
+.aomark-listings-metabox-tabs button:hover {
+	background: var(--aomark-surface);
+	border-color: var(--aomark-accent);
+	box-shadow: 0 4px 12px var(--aomark-focus);
+	color: var(--aomark-text);
+	outline: none;
+	transform: translateY(-1px);
+}
+
+.aomark-listings-tabs button.is-active,
+.aomark-listings-metabox-tabs button.is-active {
+	background: linear-gradient(135deg, var(--aomark-accent) 0%, var(--aomark-accent-2) 100%);
+	border-color: var(--aomark-accent);
+	box-shadow: 0 4px 12px var(--aomark-focus), 0 0 20px var(--aomark-shadow-glow);
+	color: #fff;
+	transform: none;
+}
+
+.aomark-listings-tab-panel {
+	display: none;
+	padding: 20px;
+}
+
+.aomark-listings-tab-panel.is-active {
+	display: block;
+}
+
+/* Grids and labels */
+.aomark-listings-grid {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.aomark-listings-grid--compact {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.aomark-listings-grid label > span,
+.aomark-listings-options > span {
+	align-items: center;
+	color: var(--aomark-text);
+	display: flex;
+	font-size: 12px;
+	font-weight: 600;
+	gap: 6px;
+	line-height: 1.4;
+	margin: 0 0 8px;
+}
+
+.aomark-listings-check {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	margin-top: 29px;
+}
+
+.aomark-listings-check input {
+	margin: 0;
+}
+
+.aomark-listings-check span {
+	margin: 0 !important;
+}
+
+/* Field and taxonomy repeaters */
+.aomark-listings-repeaters {
+	display: grid;
+	gap: 12px;
+}
+
+.aomark-listings-repeater-row {
+	background: rgba(30, 41, 59, 0.56);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius);
+	margin: 0;
+	overflow: hidden;
+	transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.aomark-listings-row-summary {
+	align-items: center;
+	background: linear-gradient(135deg, rgba(168, 85, 247, 0.06), rgba(192, 38, 211, 0.025));
+	border-bottom: 1px solid var(--aomark-border-soft);
+	display: grid;
+	gap: 12px;
+	grid-template-columns: minmax(0, 1fr) 150px 36px;
+	padding: 0 12px 0 0;
+}
+
+.aomark-listings-repeater-row--field .aomark-listings-row-summary,
+.aomark-listings-repeater-row--taxonomy .aomark-listings-row-summary {
+	grid-template-columns: minmax(0, 1fr) 150px 36px;
+	padding: 0 12px 0 0;
+}
+
+.aomark-listings-row-toggle {
+	align-items: center;
+	background: transparent;
+	border: 0;
+	color: inherit;
+	cursor: pointer;
+	display: grid;
+	gap: 12px;
+	grid-template-columns: 40px minmax(0, 1fr) 22px;
+	margin: 0;
+	min-height: 72px;
+	padding: 11px 0 11px 14px;
+	text-align: left;
+	width: 100%;
+}
+
+.aomark-listings-row-toggle:focus {
+	box-shadow: inset 3px 0 0 var(--aomark-accent);
+	outline: none;
+}
+
+.aomark-listings-row-toggle:hover .aomark-listings-row-title strong {
+	color: #d8b4fe;
+}
+
+.aomark-listings-row-index {
+	align-items: center;
+	background: rgba(168, 85, 247, 0.16);
+	border: 1px solid rgba(168, 85, 247, 0.28);
+	border-radius: 50%;
+	color: #d8b4fe;
+	display: inline-flex;
+	font-size: 12px;
+	font-weight: 700;
+	height: 28px;
+	justify-content: center;
+	width: 28px;
+}
+
+.aomark-listings-row-title {
+	min-width: 0;
+}
+
+.aomark-listings-row-title strong {
+	color: var(--aomark-text);
+	display: block;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.3;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	transition: color 0.2s ease;
+	white-space: nowrap;
+}
+
+.aomark-listings-row-title code {
+	background: transparent;
+	color: var(--aomark-muted);
+	display: block;
+	font-size: 12px;
+	margin-top: 3px;
+	overflow: hidden;
+	padding: 0;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.aomark-listings-row-tab {
+	color: #c4b5fd;
+	display: inline-block;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	margin-top: 5px;
+	text-transform: uppercase;
+}
+
+.aomark-listings-row-chevron {
+	color: var(--aomark-muted);
+	transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.aomark-listings-repeater-row:not(.is-collapsed) {
+	border-color: rgba(168, 85, 247, 0.45);
+	box-shadow: 0 4px 12px var(--aomark-focus);
+}
+
+.aomark-listings-repeater-row:not(.is-collapsed) .aomark-listings-row-chevron {
+	color: var(--aomark-accent);
+	transform: rotate(180deg);
+}
+
+.aomark-listings-repeater-row.is-collapsed .aomark-listings-row-summary {
+	border-bottom-color: transparent;
+}
+
+.aomark-listings-type-pill {
+	align-items: center;
+	background: var(--aomark-surface-2);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius-pill);
+	color: #d8b4fe;
+	display: inline-flex;
+	font-size: 12px;
+	font-weight: 600;
+	gap: 6px;
+	justify-content: center;
+	line-height: 1;
+	min-height: 30px;
+	padding: 6px 10px;
+	text-align: center;
+}
+
+.aomark-listings-type-pill::before {
+	align-items: center;
+	background: rgba(168, 85, 247, 0.22);
+	border-radius: 50%;
+	content: "#";
+	display: inline-flex;
+	font-size: 11px;
+	height: 18px;
+	justify-content: center;
+	width: 18px;
+}
+
+.aomark-listings-type-pill--text::before,
+.aomark-listings-type-pill--textarea::before,
+.aomark-listings-type-pill--url::before,
+.aomark-listings-type-pill--email::before {
+	content: "T";
+}
+
+.aomark-listings-type-pill--image::before,
+.aomark-listings-type-pill--gallery::before {
+	content: "I";
+}
+
+.aomark-listings-type-pill--location::before {
+	content: "L";
+}
+
+.aomark-listings-type-pill--checkbox::before {
+	content: "1";
+}
+
+.aomark-listings-repeater-row > .aomark-listings-grid,
+.aomark-listings-row-details > .aomark-listings-grid {
+	padding: 18px;
+}
+
+.aomark-listings-repeater-row.is-collapsed .aomark-listings-row-details {
+	display: none;
+}
+
+.aomark-listings-repeater-add {
+	display: flex;
+	justify-content: center;
+	padding: 16px 0 2px;
+}
+
+.aomark-listings-add-button {
+	align-items: center;
+	background: rgba(168, 85, 247, 0.1);
+	border: 1px solid rgba(168, 85, 247, 0.72);
+	border-radius: 50%;
+	color: #d8b4fe;
+	cursor: pointer;
+	display: inline-flex;
+	height: 38px;
+	justify-content: center;
+	margin: 0;
+	padding: 0;
+	transition: all 0.25s ease;
+	width: 38px;
+}
+
+.aomark-listings-add-button .dashicons {
+	font-size: 18px;
+	height: 18px;
+	line-height: 18px;
+	width: 18px;
+}
+
+.aomark-listings-add-button:focus,
+.aomark-listings-add-button:hover {
+	background: linear-gradient(135deg, var(--aomark-accent), var(--aomark-accent-2));
+	border-color: var(--aomark-accent);
+	box-shadow: 0 0 0 3px var(--aomark-focus), var(--aomark-shadow-glow);
+	color: #fff;
+	outline: none;
+	transform: translateY(-1px);
+}
+
+.aomark-listings-options {
+	display: none;
+	margin: 0;
+	padding: 0 18px 18px;
+}
+
+.aomark-listings-options.is-visible {
+	display: block;
+}
+
+.aomark-listings-placeholder {
+	display: none;
+}
+
+.aomark-listings-placeholder.is-visible {
+	display: block;
+}
+
+.aomark-listings-options textarea {
+	font-family: Consolas, Monaco, monospace;
+}
+
+.aomark-listings-remove-button {
+	align-items: center;
+	background: transparent;
+	border: 1px solid rgba(239, 68, 68, 0.72);
+	border-radius: 50%;
+	color: #f87171;
+	cursor: pointer;
+	display: inline-flex;
+	height: 34px;
+	justify-content: center;
+	margin: 0;
+	padding: 0;
+	transition: all 0.25s ease;
+	width: 34px;
+}
+
+.aomark-listings-remove-button .dashicons {
+	font-size: 17px;
+	height: 17px;
+	line-height: 17px;
+	width: 17px;
+}
+
+.aomark-listings-remove-button:focus,
+.aomark-listings-remove-button:hover {
+	background: rgba(239, 68, 68, 0.12);
+	border-color: var(--aomark-error);
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+	color: #fecaca;
+	outline: none;
+	transform: translateY(-1px);
+}
+
+/* Help tooltip */
+.aomark-listings-help {
+	align-items: center;
+	background: var(--aomark-surface-2);
+	border: 1px solid var(--aomark-border);
+	border-radius: 50%;
+	color: var(--aomark-muted);
+	cursor: help;
+	display: inline-flex;
+	flex: 0 0 auto;
+	font-size: 11px;
+	font-weight: 700;
+	height: 18px;
+	justify-content: center;
+	line-height: 1;
+	position: relative;
+	transition: all 0.2s ease;
+	width: 18px;
+}
+
+.aomark-listings-help:focus,
+.aomark-listings-help:hover {
+	border-color: var(--aomark-accent);
+	color: var(--aomark-accent);
+	outline: none;
+}
+
+.aomark-listings-help::before,
+.aomark-listings-help::after {
+	opacity: 0;
+	pointer-events: none;
+	position: absolute;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+	z-index: 100000;
+}
+
+.aomark-listings-help::after {
+	background: #1e293b;
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius);
+	bottom: calc(100% + 10px);
+	box-shadow: var(--aomark-shadow);
+	color: #fff;
+	content: attr(data-aomark-tooltip);
+	font-size: 12px;
+	font-weight: 500;
+	left: 50%;
+	line-height: 1.5;
+	padding: 10px 12px;
+	text-align: left;
+	transform: translate(-50%, 4px);
+	white-space: normal;
+	width: 260px;
+}
+
+.aomark-listings-help::before {
+	border: 6px solid transparent;
+	border-top-color: #1e293b;
+	bottom: calc(100% - 2px);
+	content: "";
+	left: 50%;
+	transform: translate(-50%, 4px);
+}
+
+.aomark-listings-help:focus::before,
+.aomark-listings-help:focus::after,
+.aomark-listings-help:hover::before,
+.aomark-listings-help:hover::after {
+	opacity: 1;
+	transform: translate(-50%, 0);
+}
+
+/* Sticky actions */
+.aomark-listings-submit-actions {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+}
+
+.aomark-listings-submit-bar {
+	-webkit-backdrop-filter: blur(10px);
+	align-items: center;
+	backdrop-filter: blur(10px);
+	background: var(--aomark-surface);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius);
+	bottom: 12px;
+	box-shadow: var(--aomark-shadow);
+	display: flex;
+	gap: 16px;
+	justify-content: space-between;
+	margin: 0 0 20px;
+	padding: 12px;
+	position: sticky;
+	z-index: 20;
+}
+
+.aomark-listings-delete-form {
+	margin: 0;
+}
+
+.aomark-listings-admin .aomark-listings-danger-button {
+	background: transparent;
+	border-color: rgba(239, 68, 68, 0.82);
+	color: #f87171;
+}
+
+.aomark-listings-admin .aomark-listings-danger-button:focus,
+.aomark-listings-admin .aomark-listings-danger-button:hover {
+	background: rgba(239, 68, 68, 0.1);
+	border-color: var(--aomark-error);
+	box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+	color: #fecaca;
+}
+
+/* Listing post editor */
+#aomark_listings_fields.postbox .inside {
+	margin: 0;
+	padding: 0;
+}
+
+.aomark-listings-metabox-shell {
+	background:
+		radial-gradient(ellipse at top, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+		var(--aomark-bg);
+	color: var(--aomark-text);
+	padding: 20px;
+}
+
+.aomark-listings-metabox-tabs {
+	margin: 0 0 10px;
+	padding: 0;
+}
+
+.aomark-listings-metabox-tabs button span {
+	align-items: center;
+	background: rgba(255, 255, 255, 0.16);
+	border-radius: var(--aomark-radius-pill);
+	color: inherit;
+	display: inline-flex;
+	font-size: 11px;
+	font-weight: 700;
+	justify-content: center;
+	line-height: 1;
+	min-width: 21px;
+	padding: 3px 7px;
+}
+
+.aomark-listings-metabox-panels {
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
+	background: var(--aomark-surface);
+	border: 1px solid var(--aomark-border-soft);
+	border-radius: var(--aomark-radius);
+	box-shadow: var(--aomark-shadow);
+	min-height: 420px;
+	padding: 18px;
+}
+
+.aomark-listings-metabox-panel {
+	background: transparent;
+	border: 0;
+	display: none;
+	padding: 0;
+}
+
+.aomark-listings-metabox-panel.is-active {
+	display: block;
+}
+
+.aomark-listings-metabox {
+	display: grid;
+	gap: 14px;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.aomark-listings-metabox-field {
+	background: var(--aomark-surface-2);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius);
+	padding: 14px;
+	transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.aomark-listings-metabox-field:focus-within {
+	border-color: rgba(168, 85, 247, 0.45);
+	box-shadow: 0 4px 12px var(--aomark-focus);
+}
+
+.aomark-listings-metabox-field > label {
+	align-items: center;
+	color: var(--aomark-text);
+	display: flex;
+	font-size: 12px;
+	font-weight: 600;
+	gap: 6px;
+	justify-content: flex-start;
+	line-height: 1.4;
+	margin: 0 0 9px;
+}
+
+.aomark-listings-metabox-field > label strong {
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.aomark-listings-metabox-field--textarea,
+.aomark-listings-metabox-field--gallery,
+.aomark-listings-metabox-field--location {
+	grid-column: 1 / -1;
+}
+
+.aomark-listings-location-editor {
+	display: grid;
+	gap: 12px;
+}
+
+.aomark-listings-location-search {
+	position: relative;
+	z-index: 1001;
+}
+
+.aomark-listings-location-results {
+	background: #1e293b;
+	border: 1px solid rgba(168, 85, 247, 0.42);
+	border-radius: 12px;
+	box-shadow: 0 14px 32px rgba(0, 0, 0, 0.36);
+	left: 0;
+	max-height: 260px;
+	overflow-y: auto;
+	padding: 6px;
+	position: absolute;
+	right: 0;
+	top: calc(100% + 6px);
+}
+
+.aomark-listings-location-results[hidden] {
+	display: none;
+}
+
+.aomark-listings-location-result {
+	background: transparent;
+	border: 0;
+	border-radius: 9px;
+	color: var(--aomark-text);
+	cursor: pointer;
+	display: block;
+	font-size: 13px;
+	line-height: 1.45;
+	padding: 10px 12px;
+	text-align: left;
+	transition: background 0.18s ease, color 0.18s ease;
+	width: 100%;
+}
+
+.aomark-listings-location-result:focus,
+.aomark-listings-location-result:hover {
+	background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(192, 38, 211, 0.12));
+	color: #fff;
+	outline: none;
+}
+
+.aomark-listings-location-map {
+	background: #111827;
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius);
+	height: 360px;
+	overflow: hidden;
+	position: relative;
+	z-index: 0;
+}
+
+.aomark-listings-location-map .leaflet-control-zoom a {
+	background: #1e293b;
+	border-color: var(--aomark-border);
+	color: var(--aomark-text);
+}
+
+.aomark-listings-location-map .leaflet-control-zoom a:hover {
+	background: #29364a;
+	color: #d8b4fe;
+}
+
+.aomark-listings-location-map .leaflet-control-attribution {
+	background: rgba(15, 23, 42, 0.82);
+	color: rgba(255, 255, 255, 0.72);
+}
+
+.aomark-listings-location-map .leaflet-control-attribution a {
+	color: #d8b4fe;
+}
+
+.aomark-listings-location-meta {
+	align-items: flex-start;
+	display: flex;
+	gap: 12px;
+	justify-content: space-between;
+}
+
+.aomark-listings-location-status,
+.aomark-listings-location-attribution {
+	color: var(--aomark-muted);
+	font-size: 11px;
+	line-height: 1.5;
+	margin: 0;
+}
+
+.aomark-listings-location-status {
+	max-width: 62%;
+}
+
+.aomark-listings-location-attribution {
+	text-align: right;
+}
+
+.aomark-listings-location-attribution a {
+	color: #d8b4fe;
+}
+
+.aomark-listings-media-preview,
+.aomark-listings-gallery-preview {
+	margin: 0 0 12px;
+}
+
+.aomark-listings-media-preview {
+	min-height: 8px;
+}
+
+.aomark-listings-gallery-preview {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.aomark-listings-media-preview img,
+.aomark-listings-gallery-preview img {
+	background: var(--aomark-surface-2);
+	border: 1px solid var(--aomark-border);
+	border-radius: var(--aomark-radius);
+	height: 88px;
+	object-fit: cover;
+	width: 88px;
+}
+
+@media (max-width: 1100px) {
+	.aomark-listings-admin-layout {
+		grid-template-columns: 260px minmax(0, 1fr);
+	}
+
+	.aomark-listings-grid--compact {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 782px) {
+	.aomark-listings-admin {
+		margin-right: 10px;
+	}
+
+	.aomark-listings-page {
+		padding: 20px;
+	}
+
+	.aomark-listings-admin-header {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.aomark-listings-header-actions {
+		width: 100%;
+	}
+
+	.aomark-listings-brand-logo {
+		height: 32px;
+		max-width: 110px;
+	}
+
+	.aomark-listings-admin-layout,
+	.aomark-listings-grid,
+	.aomark-listings-grid--compact,
+	.aomark-listings-metabox {
+		grid-template-columns: 1fr;
+	}
+
+	.aomark-listings-check {
+		margin-top: 0;
+	}
+
+	.aomark-listings-row-summary {
+		grid-template-columns: 38px minmax(0, 1fr);
+	}
+
+	.aomark-listings-row-summary .aomark-listings-type-pill,
+	.aomark-listings-row-summary .aomark-listings-remove-button {
+		grid-column: 2;
+	}
+
+	.aomark-listings-repeater-row--field .aomark-listings-row-summary,
+	.aomark-listings-repeater-row--taxonomy .aomark-listings-row-summary {
+		grid-template-columns: minmax(0, 1fr) 36px;
+	}
+
+	.aomark-listings-repeater-row--field .aomark-listings-type-pill,
+	.aomark-listings-repeater-row--taxonomy .aomark-listings-type-pill {
+		display: none;
+	}
+
+	.aomark-listings-row-toggle {
+		grid-template-columns: 34px minmax(0, 1fr) 20px;
+	}
+
+	.aomark-listings-submit-actions {
+		flex-wrap: wrap;
+	}
+
+	.aomark-listings-submit-bar {
+		align-items: stretch;
+		flex-direction: column;
+		position: static;
+	}
+
+	.aomark-listings-delete-form .button {
+		width: 100%;
+	}
+
+	.aomark-listings-location-map {
+		height: 300px;
+	}
+
+	.aomark-listings-location-meta {
+		flex-direction: column;
+	}
+
+	.aomark-listings-location-status {
+		max-width: none;
+	}
+
+	.aomark-listings-location-attribution {
+		text-align: left;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.aomark-listings-admin *,
+	.aomark-listings-metabox-shell * {
+		transition-duration: 0.01ms !important;
+	}
+}
