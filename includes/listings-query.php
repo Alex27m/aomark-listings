@@ -125,10 +125,10 @@ function aomark_listings_gallery_ids( $post_id, $field ) {
 	$value = get_post_meta( $post_id, aomark_listings_meta_key( $field ), true );
 
 	if ( is_array( $value ) ) {
-		return array_values( array_filter( array_map( 'absint', $value ) ) );
+		return array_slice( array_values( array_filter( array_map( 'absint', $value ) ) ), 0, 100 );
 	}
 
-	return array_values( array_filter( array_map( 'absint', explode( ',', (string) $value ) ) ) );
+	return array_slice( array_values( array_filter( array_map( 'absint', explode( ',', substr( (string) $value, 0, 4096 ) ) ) ) ), 0, 100 );
 }
 
 function aomark_listings_location_value( $post_id, $model ) {
@@ -457,7 +457,7 @@ function aomark_listings_get_query( $settings = [], $page = 1 ) {
 }
 
 function aomark_listings_get_map_items( $settings = [] ) {
-	$limit = max( 1, min( 500, absint( $settings['map_limit'] ?? $settings['limit'] ?? 200 ) ) );
+	$limit = max( 1, min( 200, absint( $settings['map_limit'] ?? $settings['limit'] ?? 200 ) ) );
 	$built = aomark_listings_build_query_args( $settings, 1 );
 	$model = $built['model'];
 	$items = [];

@@ -11,7 +11,7 @@ async function mustExist(relativePath) {
 	assert.ok(details.isFile(), `${relativePath} must be a file`);
 }
 
-const [plugin, readme, assets, models, admin, query, render, frontend, privacy] = await Promise.all([
+const [plugin, readme, assets, models, admin, query, render, frontend, adminFrontend, privacy] = await Promise.all([
 	read('aomark-real-estate.php'),
 	read('readme.txt'),
 	read('includes/listings-assets.php'),
@@ -20,6 +20,7 @@ const [plugin, readme, assets, models, admin, query, render, frontend, privacy] 
 	read('includes/listings-query.php'),
 	read('includes/listings-render.php'),
 	read('assets/js/listings.js'),
+	read('assets/js/admin-listings.js'),
 	read('includes/listings-privacy.php'),
 ]);
 
@@ -33,6 +34,7 @@ assert.equal(headerVersion, stableVersion, 'Plugin and readme stable versions mu
 assert.match(readme, /^Tested up to:\s*\d+\.\d+$/m, 'readme.txt must declare Tested up to');
 assert.equal((readme.match(/^Tags:/gm) || []).length, 1, 'readme.txt must contain one Tags header');
 assert.ok((readme.match(/^Tags:\s*(.+)$/m)?.[1].split(',') || []).length <= 5, 'WordPress.org allows at most five tags');
+assert.match(readme, /^Contributors:\s*alex2703$/m, 'WordPress.org contributor must match the owner profile');
 
 for (const file of [
 	'assets/vendor/leaflet/LICENSE',
@@ -53,18 +55,35 @@ assert.doesNotMatch(localLeaflet, /sourceMappingURL=/, 'Vendored Leaflet must no
 assert.doesNotMatch(ownedRuntime, /unpkg\.com|cdnjs\.cloudflare\.com\/ajax\/libs\/leaflet/i, 'Leaflet executable assets must remain local');
 assert.doesNotMatch(ownedRuntime, /\{s\}\.tile\.openstreetmap\.org/, 'OpenStreetMap standard tiles must not use subdomains');
 assert.match(frontend, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/, 'Frontend maps must use the current standard tile URL');
+assert.match(assets, /function aomark_listings_tile_url/, 'Tile templates must be filterable through a validated helper');
+assert.match(assets, /function aomark_listings_tile_attribution/, 'Tile attribution must be filterable and sanitized');
 assert.match(assets, /aomark-listings-leaflet/, 'Leaflet handles must be plugin-prefixed');
 assert.match(assets, /static \$registered = false;/, 'Asset localization must be idempotent');
+assert.match(models, /data-aomark-location-load-map/, 'Admin maps must require an explicit click-to-load action');
+assert.match(adminFrontend, /loadMapButton\.on\('click', loadMap\)/, 'Admin map tiles must load only after the consent button is used');
 
 assert.match(render, /function aomark_listings_create_signed_descriptor/, 'Results need signed public descriptors');
 assert.match(render, /function aomark_listings_verify_signed_descriptor/, 'AJAX must verify signed descriptors');
 assert.match(render, /hash_equals\(/, 'Descriptor signatures require timing-safe comparison');
 assert.match(render, /aomark_listings_verify_signed_descriptor\( \$descriptor, 'results' \)/, 'Results descriptors must be purpose-bound');
 assert.match(render, /aomark_listings_verify_signed_descriptor\( \$map_descriptor, 'map' \)/, 'Map descriptors must be purpose-bound');
+assert.match(render, /function aomark_listings_default_results_url/, 'Filters need an archive-safe public action resolver');
+assert.match(render, /'results_url'\s*=>\s*\$results_url/, 'Sanitized results settings must preserve the resolved filter action');
+assert.match(render, /'results_url'\s*=>\s*\$settings\['results_url'\]/, 'Integrated AJAX filters must reuse the signed public action');
+for (const resolverPrimitive of ['is_post_type_archive', 'get_post_type_archive_link', 'is_tax', 'get_term_link', 'get_queried_object', 'instanceof WP_Post']) {
+	assert.ok(render.includes(resolverPrimitive), `Public filter actions must retain ${resolverPrimitive}`);
+}
+assert.match(render, /function aomark_listings_route_query_args/, 'Plain-permalink WordPress routes need a bounded query allowlist');
+assert.match(render, /data-aomark-route-param="yes"/, 'GET forms must retain plain-permalink routing controls');
+assert.match(render, /aomark_listings_results_page_url\([\s\S]*\$results_url/, 'AJAX pagination must retain its signed public base URL');
+assert.match(render, /\$map_only[\s\S]*if \( ! \$map_only \)[\s\S]*aomark_listings_render_results_inner/, 'Map-only AJAX must skip the results query');
+assert.match(frontend, /body\.append\('map_only', '1'\)/, 'Map-only frontend requests must declare their response mode');
 assert.match(query, /'post_status'\s*=>\s*'publish'/, 'Public listing queries must explicitly request published posts');
 assert.match(query, /'has_password'\s*=>\s*false/, 'Public listing queries must exclude protected posts before pagination');
 assert.match(query, /'compare'\s*=>\s*'REGEXP'/, 'Map queries must reject malformed coordinate metadata before numeric casts');
 assert.match(query, /\[\.,\]/, 'Map queries must retain legacy decimal-comma coordinates');
+assert.match(query, /min\( 200, absint\( \$settings\['map_limit'\]/, 'Public map queries must remain capped at 200 pins');
+assert.match(query, /array_slice\([\s\S]*0, 100/, 'Gallery metadata reads must remain bounded');
 assert.match(query, /function aomark_listings_request_targets_model/, 'URL filters must be scoped to their model');
 assert.match(models, /AOMARK_LISTINGS_SCHEMA_VERSION = 2/, 'The compatibility schema version must remain explicit');
 assert.match(models, /\$field\['key'\] \. '_address'/, 'Registry validation must reserve location-derived storage keys');
@@ -79,8 +98,16 @@ for (const primitive of ['WeakMap', 'AbortController', 'popstate', 'data-aomark-
 	assert.ok(frontend.includes(primitive), `Frontend isolation must retain ${primitive}`);
 }
 assert.match(frontend, /if \(options\.append !== true\)[\s\S]*snapshotForWidget\(widget, state\)/, 'Load More must not replace the URL-addressable history snapshot with a partial page');
-assert.match(render, /PHP_QUERY_RFC3986/, 'AJAX pagination links must use document-relative, model-scoped query URLs');
+assert.doesNotMatch(frontend, /status\.focus\(/, 'Hidden live status nodes must never receive focus');
+assert.match(frontend, /focusElement\(responseMeta\.firstAdded \|\| inner\)/, 'Load More must move focus to newly appended content');
+assert.match(frontend, /routeSignature[\s\S]*key\.indexOf\('alm_'\) !== 0/, 'AJAX interception must distinguish plain and custom-taxonomy route queries');
+assert.match(frontend, /data-aomark-route-param/, 'Reset and history synchronization must preserve route controls');
+assert.match(frontend, /retryOptions\.focusResults = true/, 'A successful retry must restore focus after replacing its button');
+assert.match(frontend, /retryOptions\.focusRetry = true/, 'A repeated failed retry must focus its replacement retry button');
+assert.match(frontend, /sort: state\.sort, focusResults: true/, 'AJAX sorting must restore focus after replacing its select');
 assert.match(render, /data-model-id=.*data-query-map=/, 'Bare query maps must expose their model for AJAX matching');
+assert.match(render, /data-aomark-listings-results-inner role="region"[\s\S]*tabindex="-1"/, 'AJAX results need a visible programmatic focus target');
+assert.match(render, /'checkbox' === \$field\['type'\][\s\S]*<option value="1"[\s\S]*<option value="0"/, 'Checkbox filters must expose understandable Yes and No values');
 
 const widgets = new Map([
 	['widgets/listing-results.php', 'aomark_listing_results'],
@@ -99,6 +126,8 @@ for (const [file, widgetName] of widgets) {
 for (const disclosure of ['Photon', 'OpenStreetMap', 'privacy policy', 'IP address', 'User-Agent']) {
 	assert.ok(readme.includes(disclosure), `readme.txt must disclose ${disclosure}`);
 }
+assert.match(readme, /leaflet-src\.js/, 'Minified Leaflet must link to human-readable source');
+assert.match(readme, /retained by default/, 'The readme must disclose uninstall data retention');
 assert.match(privacy, /wp_add_privacy_policy_content/, 'The plugin must offer WordPress privacy-policy guidance');
 
 process.stdout.write('Static compatibility contracts passed.\n');

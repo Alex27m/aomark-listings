@@ -4,7 +4,7 @@
 [![PHP 7.4+](https://img.shields.io/badge/PHP-7.4%2B-777bb4.svg)](https://www.php.net/)
 [![License: GPL v2 or later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)](LICENSE)
 
-An Elementor-first WordPress listings engine for real-estate, directory, and custom listing sites. Version 3.5.0 keeps the existing data model and widgets while making setup safer, clearer, and progressively enhanced.
+An Elementor-first WordPress listings engine for real-estate, directory, and custom listing sites. Version 3.5.1 keeps the existing data model and public URLs while making setup safer, clearer, progressively enhanced, and reliable with both pretty and plain permalinks.
 
 ## What it provides
 
@@ -31,7 +31,7 @@ Existing technical identifiers are read-only because changing them without a mig
 
 See the full [quick-start guide](docs/quick-start.md), [compatibility contract](docs/compatibility-contract.md), and [release test matrix](docs/testing.md).
 
-When upgrading from 3.4.x, clear full-page and CDN caches once. Version 3.5.0 rejects stale unsigned AJAX descriptors by design; the server-rendered fallback continues to work while caches refresh.
+When upgrading from 3.4.x, clear full-page and CDN caches once. Version 3.5 rejects stale unsigned AJAX descriptors by design; the server-rendered fallback continues to work while caches refresh.
 
 ## Multiple widget groups
 
@@ -41,10 +41,10 @@ The public `alm_*` URL format stores one state per listing type. If two groups f
 
 ## Location and external services
 
-Leaflet 1.9.4 is included locally under `assets/vendor/leaflet/` with its license. The optional location features use two documented external services by default:
+Leaflet 1.9.4 is included locally under `assets/vendor/leaflet/` with its license. Its human-readable source is available as [leaflet-src.js](https://unpkg.com/leaflet@1.9.4/dist/leaflet-src.js) and in the [official 1.9.4 source tag](https://github.com/Leaflet/Leaflet/tree/v1.9.4). The optional location features use two documented external services by default:
 
 - [Photon](https://photon.komoot.io/) for editor address search. An authenticated editor's address query, optional country code, site URL/plugin version in the User-Agent, and normal server request metadata are sent from WordPress to Photon. Searches require at least three characters, are rate limited, request at most five results, and successful responses are cached for 12 hours. See [Komoot's privacy policy](https://www.komoot.com/privacy).
-- [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/) for admin and frontend maps. A browser loading a map sends normal request data—such as IP address, User-Agent, referrer, and tile coordinates—to `tile.openstreetmap.org`. See the [OSMF privacy policy](https://osmfoundation.org/wiki/Privacy_Policy) and [attribution requirements](https://www.openstreetmap.org/copyright).
+- [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/) for admin and frontend maps. Admin tiles are explicit click-to-load; frontend tiles load only on pages where a site owner placed the Map widget. A browser loading a map sends normal request data—such as IP address, User-Agent, referrer, and tile coordinates—to `tile.openstreetmap.org`. See the [OSMF privacy policy](https://osmfoundation.org/wiki/Privacy_Policy) and [attribution requirements](https://www.openstreetmap.org/copyright).
 
 The plugin adds suggested disclosure text to WordPress' Privacy Policy Guide and sends no analytics or telemetry to Aomark.
 
@@ -57,6 +57,18 @@ add_filter( 'aomark_listings_geocoder_endpoint', function () {
 
 add_filter( 'aomark_listings_geocoder_country_code', function () {
 	return 'rs';
+} );
+```
+
+The HTTPS tile template and required attribution are filterable too:
+
+```php
+add_filter( 'aomark_listings_tile_url', function () {
+	return 'https://tiles.example.com/{z}/{x}/{y}.png';
+} );
+
+add_filter( 'aomark_listings_tile_attribution', function () {
+	return '&copy; Example Maps';
 } );
 ```
 
@@ -90,10 +102,11 @@ find . -name '*.php' -print0 | xargs -0 -n1 php -l
 php tests/model-contract.php
 find assets -name '*.js' -print0 | xargs -0 -n1 node --check
 node tests/static-contracts.mjs
+npm run check
 git diff --check
 ```
 
-GitHub Actions runs PHP syntax checks on PHP 7.4, 8.3, and 8.5, the PHP model contracts, JavaScript syntax, static compatibility contracts, and the official WordPress Plugin Check action. WordPress integration, browser, legacy-upgrade, accessibility, and scale scenarios remain explicit manual release checks in [docs/testing.md](docs/testing.md).
+GitHub Actions runs PHP syntax checks on PHP 7.4, 8.3, and 8.5, the PHP model contracts, JavaScript syntax, static compatibility contracts, a deterministic exact-package gate, and the official WordPress Plugin Check action. WordPress integration, browser, legacy-upgrade, accessibility, and scale scenarios remain explicit manual release checks in [docs/testing.md](docs/testing.md).
 
 ## License
 

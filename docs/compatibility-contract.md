@@ -40,6 +40,9 @@ These filters remain supported:
 - `aomark_listings_geocoder_country_code`
 - `aomark_listings_editor_map_default_center`
 - `aomark_listings_editor_map_default_zoom`
+- `aomark_listings_tile_url`
+- `aomark_listings_tile_attribution`
+- `aomark_listings_filter_term_limit`
 
 ## Migration rules
 

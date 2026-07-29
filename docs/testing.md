@@ -9,6 +9,7 @@ Use this matrix for release-candidate testing. The legacy fixture should be expo
 - Create a Real Estate listing type through the guided admin.
 - Add at least 30 listings with prices, galleries, locations, and several missing coordinates.
 - Verify create/edit/delete, cards, fixed filters, visitor filters, all sort modes, numbered pagination, Load More, map popups, archive, and single pages.
+- Repeat filter, reset, sort, and pagination checks with both pretty and plain permalinks, including a custom-taxonomy archive.
 
 ### B — Directory and privacy
 
@@ -41,6 +42,7 @@ Use this matrix for release-candidate testing. The legacy fixture should be expo
 ### F — Degraded and accessibility
 
 - Disable JavaScript and verify filter, reset, sort, and numbered pagination.
+- Verify admin OpenStreetMap tiles make no request before the explicit load action.
 - Simulate Photon timeout/429 and blocked OpenStreetMap tiles.
 - Test zero listing types, deleted fields, missing coordinates, and stale Elementor references.
 - Complete keyboard-only checks, visible focus, results announcements, location combobox navigation, high contrast, zoom, and mobile layouts.

@@ -155,6 +155,8 @@
 			var latInput = editor.find('[data-aomark-location-lat]');
 			var lngInput = editor.find('[data-aomark-location-lng]');
 			var canvas = editor.find('[data-aomark-location-map]').get(0);
+			var consent = editor.find('[data-aomark-location-consent]');
+			var loadMapButton = editor.find('[data-aomark-location-load-map]');
 			var results = editor.find('[data-aomark-location-results]');
 			var status = editor.find('[data-aomark-location-status]');
 			var settings = window.AomarkListingsAdmin || {};
@@ -264,11 +266,18 @@
 				});
 			}
 
-			if (window.L && canvas) {
+			function loadMap() {
+				if (map || !canvas) { return; }
+				if (!window.L) {
+					status.text(adminString('mapUnavailable', 'Map could not be loaded.'));
+					return;
+				}
+
+				canvas.hidden = false;
 				map = window.L.map(canvas, { scrollWheelZoom: false }).setView(defaultCenter, defaultZoom);
-				window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				window.L.tileLayer(settings.tileUrl || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 					maxZoom: 19,
-					attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+					attribution: settings.tileAttribution || '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
 				}).addTo(map);
 				map.on('click', function(event){
 					setPoint(event.latlng.lat, event.latlng.lng, false, adminString('pinMoved', 'Pin position updated.'));
@@ -277,10 +286,13 @@
 				var savedLat = parseFloat(latInput.val());
 				var savedLng = parseFloat(lngInput.val());
 				if (validPoint(savedLat, savedLng)) { setPoint(savedLat, savedLng, true); }
+				loadMapButton.attr('aria-expanded', 'true').text(adminString('mapLoadedButton', 'Map loaded'));
+				consent.addClass('is-loaded');
+				status.text(adminString('mapLoaded', 'Map loaded. Drag the pin or click the map to fine-tune it.'));
 				setTimeout(function(){ map.invalidateSize(); }, 100);
-			} else {
-				status.text(adminString('mapUnavailable', 'Map could not be loaded.'));
 			}
+
+			loadMapButton.on('click', loadMap);
 
 			address.on('input', function(){
 				var query = $.trim(address.val());
@@ -311,7 +323,12 @@
 				var result = $(this);
 				var label = result.attr('data-label') || result.text();
 				address.val(label).attr('data-aomark-selected-address', label);
-				setPoint(result.attr('data-lat'), result.attr('data-lng'), true, adminString('locationSet', 'Location selected.'));
+				setPoint(
+					result.attr('data-lat'),
+					result.attr('data-lng'),
+					true,
+					map ? adminString('locationSet', 'Location selected.') : adminString('locationSaved', 'Location selected. Load the map to fine-tune the pin.')
+				);
 				closeResults();
 				address.trigger('focus');
 			});

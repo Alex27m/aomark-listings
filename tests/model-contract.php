@@ -34,8 +34,49 @@ function sanitize_email( $value ) {
 	return filter_var( $value, FILTER_VALIDATE_EMAIL ) ? $value : '';
 }
 
-function esc_url_raw( $value ) {
+function esc_url_raw( $value, $protocols = null ) {
 	return filter_var( $value, FILTER_VALIDATE_URL ) ? $value : '';
+}
+
+function wp_validate_redirect( $value ) {
+	return $value;
+}
+
+function wp_parse_url( $value, $component = -1 ) {
+	return parse_url( $value, $component );
+}
+
+function wp_parse_str( $value, &$result ) {
+	parse_str( $value, $result );
+}
+
+function aomark_test_build_url( $parts, $query ) {
+	$url = isset( $parts['scheme'] ) ? $parts['scheme'] . '://' : '';
+	$url .= $parts['host'] ?? '';
+	$url .= $parts['path'] ?? '';
+	$url .= '' !== $query ? '?' . $query : '';
+	$url .= isset( $parts['fragment'] ) ? '#' . $parts['fragment'] : '';
+	return $url;
+}
+
+function add_query_arg( $args, $url ) {
+	$parts = parse_url( $url );
+	$query = [];
+	parse_str( $parts['query'] ?? '', $query );
+	foreach ( (array) $args as $key => $value ) {
+		$query[ $key ] = $value;
+	}
+	return aomark_test_build_url( $parts, http_build_query( $query, '', '&', PHP_QUERY_RFC3986 ) );
+}
+
+function remove_query_arg( $keys, $url = '' ) {
+	$parts = parse_url( $url );
+	$query = [];
+	parse_str( $parts['query'] ?? '', $query );
+	foreach ( (array) $keys as $key ) {
+		unset( $query[ $key ] );
+	}
+	return aomark_test_build_url( $parts, http_build_query( $query, '', '&', PHP_QUERY_RFC3986 ) );
 }
 
 function remove_accents( $value ) {
@@ -185,14 +226,14 @@ aomark_test_assert( [ 'shared' ] === aomark_listings_normalize_selected_ids( [ '
 $_GET = [ 'alm_model' => 'foo_bar', 'alm_keyword' => 'shared term' ];
 aomark_test_assert( false === aomark_listings_request_targets_model( $zero_model ), 'URL filters must not leak into another listing type.' );
 aomark_test_assert( [] === aomark_listings_sanitize_ajax_filters( 'alm_model=foo_bar&alm_keyword=shared+term', $zero_model ), 'AJAX filters must honor their model scope.' );
-$zero_page_url = aomark_listings_results_page_url( 2, $zero_model );
-parse_str( ltrim( $zero_page_url, '?' ), $zero_page_params );
+$zero_page_url = aomark_listings_results_page_url( 2, $zero_model, 'https://example.test/listings/' );
+parse_str( (string) parse_url( $zero_page_url, PHP_URL_QUERY ), $zero_page_params );
 aomark_test_assert( '0' === $zero_page_params['alm_model'] && 2 === (int) $zero_page_params['alm_page'], 'Pagination must switch to the model that owns the clicked result view.' );
 aomark_test_assert( ! isset( $zero_page_params['alm_keyword'] ), 'Pagination must not retain another model\'s filters.' );
 
 $_GET = [ 'alm_model' => '0', 'alm_keyword' => 'zero term' ];
-$zero_page_url = aomark_listings_results_page_url( 3, $zero_model );
-parse_str( ltrim( $zero_page_url, '?' ), $zero_page_params );
+$zero_page_url = aomark_listings_results_page_url( 3, $zero_model, 'https://example.test/listings/' );
+parse_str( (string) parse_url( $zero_page_url, PHP_URL_QUERY ), $zero_page_params );
 aomark_test_assert( 'zero term' === $zero_page_params['alm_keyword'], 'Pagination must retain filters for its own model.' );
 $built_query = aomark_listings_build_query_args( [ 'model_id' => '0' ], 1 );
 aomark_test_assert( false === $built_query['args']['has_password'], 'Public result queries must exclude password-protected posts before pagination.' );

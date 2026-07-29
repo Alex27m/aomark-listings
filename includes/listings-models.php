@@ -967,6 +967,7 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 
 	if ( 'gallery' === $type ) {
 		$ids = is_array( $value ) ? array_map( 'absint', $value ) : array_filter( array_map( 'absint', explode( ',', (string) $value ) ) );
+		$ids = array_slice( array_values( array_filter( $ids ) ), 0, 100 );
 		echo '<div class="aomark-listings-gallery-field">';
 		printf( '<input type="hidden" name="aomark_listing_meta[%s]" value="%s">', esc_attr( $key ), esc_attr( implode( ',', $ids ) ) );
 		echo '<div class="aomark-listings-gallery-preview">';
@@ -988,6 +989,7 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 		$lat        = get_post_meta( $post_id, $key . '_lat', true );
 		$lng        = get_post_meta( $post_id, $key . '_lng', true );
 		$results_id = 'aomark-location-results-' . $post_id . '-' . sanitize_html_class( $key );
+		$map_id     = 'aomark-location-map-' . $post_id . '-' . sanitize_html_class( $key );
 		echo '<div class="aomark-listings-location-editor" data-aomark-location-editor>';
 		echo '<div class="aomark-listings-location-search">';
 		printf(
@@ -1001,7 +1003,15 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 		echo '</div>';
 		printf( '<input type="hidden" data-aomark-location-lat name="aomark_listing_meta[%1$s_lat]" value="%2$s">', esc_attr( $key ), esc_attr( $lat ) );
 		printf( '<input type="hidden" data-aomark-location-lng name="aomark_listing_meta[%1$s_lng]" value="%2$s">', esc_attr( $key ), esc_attr( $lng ) );
-		echo '<div class="aomark-listings-location-map" data-aomark-location-map></div>';
+		echo '<div class="aomark-listings-location-consent" data-aomark-location-consent>';
+		echo '<p>' . wp_kses_post( __( 'The interactive map loads tiles from <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>. Loading it sends your IP address and request data to the tile service under its <a href="https://operations.osmfoundation.org/policies/tiles/" target="_blank" rel="noopener noreferrer">tile usage policy</a> and <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener noreferrer">privacy policy</a>.', 'aomark-listings' ) ) . '</p>';
+		printf(
+			'<button type="button" class="button" data-aomark-location-load-map aria-controls="%1$s" aria-expanded="false">%2$s</button>',
+			esc_attr( $map_id ),
+			esc_html__( 'Load OpenStreetMap map', 'aomark-listings' )
+		);
+		echo '</div>';
+		printf( '<div id="%s" class="aomark-listings-location-map" data-aomark-location-map hidden></div>', esc_attr( $map_id ) );
 		echo '<div class="aomark-listings-location-meta">';
 		echo '<p class="aomark-listings-location-status" data-aomark-location-status aria-live="polite">' . esc_html__( 'Search for an address, then fine-tune the pin by dragging it or clicking the map.', 'aomark-listings' ) . '</p>';
 		echo '<p class="aomark-listings-location-attribution">' . wp_kses_post( __( 'Search by <a href="https://photon.komoot.io/" target="_blank" rel="noopener noreferrer">Photon</a> · Data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.', 'aomark-listings' ) ) . '</p>';
@@ -1195,12 +1205,15 @@ function aomark_listings_save_meta_box( $post_id ) {
 
 		if ( 'gallery' === $type ) {
 			$gallery_value = isset( $data[ $key ] ) && is_scalar( $data[ $key ] ) ? (string) $data[ $key ] : '';
-			$ids = array_filter( array_map( 'absint', explode( ',', $gallery_value ) ) );
+			$gallery_value = substr( $gallery_value, 0, 4096 );
+			$ids = array_slice( array_filter( array_map( 'absint', explode( ',', $gallery_value ) ) ), 0, 100 );
 			$ids = array_values(
 				array_filter(
 					array_unique( $ids ),
 					function ( $attachment_id ) {
-						return 'attachment' === get_post_type( $attachment_id ) && wp_attachment_is_image( $attachment_id );
+						return 'attachment' === get_post_type( $attachment_id )
+							&& wp_attachment_is_image( $attachment_id )
+							&& current_user_can( 'read_post', $attachment_id );
 					}
 				)
 			);

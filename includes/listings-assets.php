@@ -9,6 +9,63 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Return the HTTPS tile template used by listing maps.
+ *
+ * The placeholders are temporarily replaced before URL sanitization because
+ * WordPress removes curly braces from regular URLs.
+ *
+ * @return string
+ */
+function aomark_listings_tile_url() {
+	$default = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+	$url     = apply_filters( 'aomark_listings_tile_url', $default );
+	$url     = is_string( $url ) ? trim( $url ) : '';
+
+	if ( '' === $url || strlen( $url ) > 500 || 0 !== stripos( $url, 'https://' ) ) {
+		return $default;
+	}
+
+	foreach ( [ '{z}', '{x}', '{y}' ] as $placeholder ) {
+		if ( false === strpos( $url, $placeholder ) ) {
+			return $default;
+		}
+	}
+
+	$tokens = [
+		'{s}' => 'AOMARKTILESUBDOMAIN',
+		'{z}' => 'AOMARKTILEZOOM',
+		'{x}' => 'AOMARKTILEX',
+		'{y}' => 'AOMARKTILEY',
+		'{r}' => 'AOMARKTILERETINA',
+	];
+	$safe_url = esc_url_raw( strtr( $url, $tokens ), [ 'https' ] );
+	$safe_url = strtr( $safe_url, array_flip( $tokens ) );
+
+	return 0 === stripos( $safe_url, 'https://' ) ? $safe_url : $default;
+}
+
+/**
+ * Return sanitized map attribution HTML.
+ *
+ * @return string
+ */
+function aomark_listings_tile_attribution() {
+	$default     = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors';
+	$attribution = apply_filters( 'aomark_listings_tile_attribution', $default );
+
+	return wp_kses(
+		is_string( $attribution ) && '' !== trim( $attribution ) ? $attribution : $default,
+		[
+			'a' => [
+				'href'   => true,
+				'rel'    => true,
+				'target' => true,
+			],
+		]
+	);
+}
+
 function aomark_listings_register_assets() {
 	static $registered = false;
 
@@ -59,13 +116,16 @@ function aomark_listings_register_assets() {
 		'aomark-listings',
 		'AomarkListingsSettings',
 		[
-			'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
-			'nonce'          => wp_create_nonce( 'aomark_listings_results' ),
-			'i18n'           => [
+			'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+			'nonce'           => wp_create_nonce( 'aomark_listings_results' ),
+			'tileUrl'         => aomark_listings_tile_url(),
+			'tileAttribution' => aomark_listings_tile_attribution(),
+			'i18n'            => [
 				'loadError'      => __( 'Listings could not be loaded. Please try again.', 'aomark-listings' ),
 				'retry'          => __( 'Retry', 'aomark-listings' ),
 				'resultsUpdated' => __( 'Listing results updated.', 'aomark-listings' ),
 				'resultsCount'   => __( '%d listings found.', 'aomark-listings' ),
+				'resultsAdded'   => __( 'Listings added: %1$d. Total: %2$d.', 'aomark-listings' ),
 				'mapEmpty'       => __( 'No listing locations match the current filters.', 'aomark-listings' ),
 				'mapLabel'       => __( 'Listing locations', 'aomark-listings' ),
 			],

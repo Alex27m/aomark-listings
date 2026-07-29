@@ -18,6 +18,19 @@
 	font-family: inherit;
 }
 
+.aomark-listings-filter *,
+.aomark-listings-filter *::before,
+.aomark-listings-filter *::after,
+.aomark-listings-results *,
+.aomark-listings-results *::before,
+.aomark-listings-results *::after,
+.aomark-listings-field *,
+.aomark-listings-meta *,
+.aomark-listings-gallery *,
+.aomark-listings-map-wrap * {
+	box-sizing: border-box;
+}
+
 .aomark-listings-screen-reader-text,
 .aomark-listings-status.screen-reader-text {
 	border: 0;
@@ -190,6 +203,12 @@
 	opacity: 0.55;
 	pointer-events: none;
 	transition: opacity 0.2s ease;
+}
+
+[data-aomark-listings-results-inner]:focus,
+.aomark-listings-card:focus {
+	outline: 3px solid color-mix(in srgb, var(--alm-accent) 45%, #fff);
+	outline-offset: 4px;
 }
 
 .aomark-listings-results.is-loading::after {
@@ -416,7 +435,14 @@ span.aomark-listings-field {
 
 .aomark-listings-field__value a {
 	color: inherit;
-	text-decoration: none;
+	text-decoration: underline;
+	text-decoration-thickness: 0.08em;
+	text-underline-offset: 0.16em;
+}
+
+.aomark-listings-field__value a:hover,
+.aomark-listings-field__value a:focus-visible {
+	color: var(--alm-accent);
 }
 
 .aomark-listings-field__prefix {
@@ -446,10 +472,15 @@ span.aomark-listings-field {
 
 .aomark-listings-meta__label {
 	color: var(--alm-muted);
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 .aomark-listings-meta__value {
 	color: var(--alm-ink);
+	min-width: 0;
+	overflow-wrap: anywhere;
+	text-align: end;
 }
 
 /* Gallery */
@@ -465,6 +496,11 @@ span.aomark-listings-field {
 	border-radius: 4px;
 	display: block;
 	overflow: hidden;
+}
+
+.aomark-listings-gallery__item:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--alm-accent) 45%, #fff);
+	outline-offset: 3px;
 }
 
 .aomark-listings-gallery__item img {
@@ -590,5 +626,15 @@ span.aomark-listings-field {
 	.aomark-listings-load-more,
 	.aomark-listings-gallery__item img {
 		transition-duration: 0.01ms;
+	}
+
+	.aomark-listings-results.is-loading::after {
+		animation: none;
+	}
+
+	.aomark-listings-card:hover,
+	.aomark-listings-card:hover .aomark-listings-card__image img,
+	.aomark-listings-gallery__item:hover img {
+		transform: none;
 	}
 }

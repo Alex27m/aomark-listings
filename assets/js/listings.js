@@ -72,7 +72,11 @@
 		var model = widgetModel(widget);
 		var urlModel = params.get('alm_model') || '';
 		if (model && urlModel && model !== urlModel) {
-			params = new URLSearchParams();
+			var routeParams = new URLSearchParams();
+			params.forEach(function(value, key){
+				if (key.indexOf('alm_') !== 0) { routeParams.append(key, value); }
+			});
+			params = routeParams;
 		}
 		if (model) { params.set('alm_model', model); }
 		return params.toString();
@@ -101,7 +105,7 @@
 		return state;
 	}
 
-	function buildBody(widget, state) {
+	function buildBody(widget, state, mapOnly) {
 		var body = new URLSearchParams();
 		var mapDescriptor = mapDescriptorFor(widget);
 		body.append('action', 'aomark_listings_results');
@@ -113,13 +117,23 @@
 		body.append('filters', state.filters || '');
 		if (state.sort) { body.append('sort', state.sort); }
 		if (mapDescriptor) { body.append('map_descriptor', mapDescriptor); }
+		if (mapOnly === true) { body.append('map_only', '1'); }
 		return body;
 	}
 
 	function isSameDocumentAction(actionUrl) {
 		try {
 			var target = new URL(actionUrl || window.location.href, window.location.href);
-			return target.origin === window.location.origin && target.pathname === window.location.pathname;
+			var current = new URL(window.location.href);
+			if (target.origin !== current.origin || target.pathname !== current.pathname) { return false; }
+			var routeSignature = function(url){
+				var pairs = [];
+				url.searchParams.forEach(function(value, key){
+					if (key.indexOf('alm_') !== 0) { pairs.push(key + '\u0000' + value); }
+				});
+				return pairs.sort().join('\u0001');
+			};
+			return routeSignature(target) === routeSignature(current);
 		} catch(e) {
 			return false;
 		}
@@ -127,7 +141,21 @@
 
 	function historyUrl(filters, actionUrl, state, page) {
 		var url = new URL(actionUrl || window.location.href, window.location.href);
-		var params = new URLSearchParams(filters || '');
+		var params = new URLSearchParams(url.search);
+		var staleListingKeys = [];
+		params.forEach(function(value, key){
+			if (key.indexOf('alm_') === 0 && staleListingKeys.indexOf(key) === -1) { staleListingKeys.push(key); }
+		});
+		staleListingKeys.forEach(function(key){ params.delete(key); });
+		var incoming = new URLSearchParams(filters || '');
+		var incomingKeys = [];
+		incoming.forEach(function(value, key){
+			if (incomingKeys.indexOf(key) === -1) {
+				params.delete(key);
+				incomingKeys.push(key);
+			}
+			params.append(key, value);
+		});
 		params.delete('alm_page');
 		if (state && state.sort) { params.set('alm_sort', state.sort); }
 		else { params.delete('alm_sort'); }
@@ -291,24 +319,25 @@
 		return component ? qs(component, '[data-aomark-listings-status]') : null;
 	}
 
-	function announce(widget, text, focus) {
+	function announce(widget, text) {
 		var status = statusNode(widget);
 		if (!status) { return; }
 		status.textContent = '';
 		window.setTimeout(function(){
 			status.textContent = text || '';
-			if (focus) {
-				status.setAttribute('tabindex', '-1');
-				status.focus();
-			}
 		}, 20);
+	}
+
+	function focusElement(element) {
+		if (!element || typeof element.focus !== 'function') { return; }
+		window.setTimeout(function(){ element.focus(); }, 0);
 	}
 
 	function removeError(widget) {
 		qsa(widget, '[data-aomark-listings-error]').forEach(function(error){ error.remove(); });
 	}
 
-	function showError(widget, error) {
+	function showError(widget, error, focusRetry) {
 		var inner = qs(widget, '[data-aomark-listings-results-inner]');
 		if (!inner) { return; }
 		removeError(widget);
@@ -318,13 +347,15 @@
 		notice.setAttribute('role', 'alert');
 		notice.innerHTML = escapeHtml(message('loadError', 'Unable to load listings.')) + ' <button type="button" class="aomark-listings-retry">' + escapeHtml(message('retry', 'Try again')) + '</button>';
 		inner.insertBefore(notice, inner.firstChild);
-		announce(widget, message('loadError', 'Unable to load listings.'), false);
+		announce(widget, message('loadError', 'Unable to load listings.'));
+		if (focusRetry === true) { focusElement(qs(notice, '.aomark-listings-retry')); }
 		dispatch('aomark:listings:error', widget, { error: error || null });
 	}
 
 	function applyResponse(widget, data, append) {
 		var inner = qs(widget, '[data-aomark-listings-results-inner]');
-		if (!inner) { return; }
+		var result = { addedCount: 0, firstAdded: null };
+		if (!inner) { return result; }
 
 		if (append) {
 			var tmp = document.createElement('div');
@@ -332,9 +363,15 @@
 			var oldGrid = qs(inner, '.aomark-listings-grid');
 			var newGrid = qs(tmp, '.aomark-listings-grid');
 			if (oldGrid && newGrid) {
-				qsa(newGrid, '.aomark-listings-card').forEach(function(card){ oldGrid.appendChild(card); });
+				var newCards = qsa(newGrid, '.aomark-listings-card');
+				result.addedCount = newCards.length;
+				result.firstAdded = newCards.length ? newCards[0] : null;
+				newCards.forEach(function(card){ oldGrid.appendChild(card); });
 			} else {
 				inner.innerHTML = data.html || '';
+				var replacementCards = qsa(inner, '.aomark-listings-card');
+				result.addedCount = replacementCards.length;
+				result.firstAdded = replacementCards.length ? replacementCards[0] : inner;
 			}
 			var oldActions = qs(inner, '.aomark-listings-results__actions');
 			var newActions = qs(tmp, '.aomark-listings-results__actions');
@@ -343,6 +380,7 @@
 		} else {
 			inner.innerHTML = data.html || '';
 		}
+		return result;
 	}
 
 	function updateMaps(widget, items) {
@@ -391,7 +429,7 @@
 			method: 'POST',
 			credentials: 'same-origin',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-			body: buildBody(widget, state)
+			body: buildBody(widget, state, mapOnly)
 		};
 		if (state.controller) { fetchOptions.signal = state.controller.signal; }
 
@@ -405,8 +443,9 @@
 				throw new Error(responseMessage);
 			}
 
+			var responseMeta = { addedCount: 0, firstAdded: null };
 			if (!mapOnly) {
-				applyResponse(widget, json.data, options.append === true);
+				responseMeta = applyResponse(widget, json.data, options.append === true);
 				state.page = Math.max(1, parseInt(json.data.page || state.page, 10) || 1);
 				state.maxPages = Math.max(0, parseInt(json.data.maxPages || json.data.max_pages || 0, 10) || 0);
 			}
@@ -416,8 +455,20 @@
 
 			if (!mapOnly) {
 				var total = parseInt(json.data.total, 10);
-				var text = isNaN(total) ? message('resultsUpdated', 'Listings updated.') : message('resultsCount', '%d listings found.').replace('%d', String(total));
-				announce(widget, text, options.focusStatus === true);
+				var text;
+				if (options.append === true && !isNaN(total)) {
+					text = message('resultsAdded', 'Listings added: %1$d. Total: %2$d.')
+						.replace('%1$d', String(responseMeta.addedCount))
+						.replace('%2$d', String(total));
+				} else {
+					text = isNaN(total) ? message('resultsUpdated', 'Listings updated.') : message('resultsCount', '%d listings found.').replace('%d', String(total));
+				}
+				announce(widget, text);
+				if (options.append === true) {
+					focusElement(responseMeta.firstAdded || inner);
+				} else if (options.focusResults === true) {
+					focusElement(inner);
+				}
 				dispatch('aomark:listings:loaded', widget, {
 					append: options.append === true,
 					maxPages: state.maxPages,
@@ -434,7 +485,7 @@
 			return true;
 		}).catch(function(error){
 			if (error && error.name === 'AbortError') { return false; }
-			if (!mapOnly && sequence === state.requestSequence) { showError(widget, error); }
+			if (!mapOnly && sequence === state.requestSequence) { showError(widget, error, options.focusRetry === true); }
 			return false;
 		}).then(function(result){
 			if (sequence === state.requestSequence) {
@@ -458,7 +509,7 @@
 		widgets.forEach(function(widget){
 			loadWidget(widget, {
 				filters: filters,
-				focusStatus: options.focusStatus === true,
+				focusResults: options.focusResults === true,
 				page: options.page || 1,
 				sort: Object.prototype.hasOwnProperty.call(options, 'sort') ? options.sort : resultState(widget).sort
 			});
@@ -475,6 +526,7 @@
 			if (connection && connection !== formConnection) { return; }
 			Array.prototype.slice.call(form.elements || []).forEach(function(field){
 				if (!field.name || field.type === 'submit' || field.type === 'button') { return; }
+				if (field.getAttribute && field.getAttribute('data-aomark-route-param') === 'yes') { return; }
 				var values = params.getAll(field.name);
 				if (field.type === 'checkbox' || field.type === 'radio') {
 					field.checked = values.indexOf(field.value) !== -1;
@@ -494,7 +546,9 @@
 		var widgets = targetResults(form);
 		if (!widgets.length) { return; }
 		event.preventDefault();
-		loadTargets(widgets, serializeForm(form), form.getAttribute('action') || window.location.href, { focusStatus: false });
+		loadTargets(widgets, serializeForm(form), form.getAttribute('action') || window.location.href, {
+			focusResults: !!form.closest('.aomark-listings-results[data-ajax="yes"]')
+		});
 	}, true);
 
 	document.addEventListener('click', function(event){
@@ -504,6 +558,7 @@
 			if (!resetForm) { return; }
 			Array.prototype.slice.call(resetForm.elements || []).forEach(function(field){
 				if (!field.name || (field.type === 'hidden' && field.name === 'alm_model') || field.type === 'submit' || field.type === 'button') { return; }
+				if (field.getAttribute && field.getAttribute('data-aomark-route-param') === 'yes') { return; }
 				if (field.type === 'checkbox' || field.type === 'radio') {
 					field.checked = false;
 				} else if (field.tagName === 'SELECT') {
@@ -515,7 +570,9 @@
 			var resetTargets = targetResults(resetForm);
 			if (resetTargets.length && isSameDocumentAction(resetForm.getAttribute('action') || window.location.href)) {
 				event.preventDefault();
-				loadTargets(resetTargets, serializeForm(resetForm), resetForm.getAttribute('action') || window.location.href, { focusStatus: false });
+				loadTargets(resetTargets, serializeForm(resetForm), resetForm.getAttribute('action') || window.location.href, {
+					focusResults: !!resetForm.closest('.aomark-listings-results[data-ajax="yes"]')
+				});
 			} else {
 				resetForm.submit();
 			}
@@ -525,7 +582,15 @@
 		var retry = event.target.closest && event.target.closest('.aomark-listings-retry');
 		if (retry) {
 			var retryWidget = retry.closest('.aomark-listings-results');
-			if (retryWidget) { event.preventDefault(); loadWidget(retryWidget, resultState(retryWidget).lastOptions); }
+			if (retryWidget) {
+				event.preventDefault();
+				var retryState = resultState(retryWidget);
+				var retryOptions = {};
+				Object.keys(retryState.lastOptions || {}).forEach(function(key){ retryOptions[key] = retryState.lastOptions[key]; });
+				retryOptions.focusResults = true;
+				retryOptions.focusRetry = true;
+				loadWidget(retryWidget, retryOptions);
+			}
 			return;
 		}
 
@@ -538,7 +603,7 @@
 				var state = resultState(widget);
 				state.widget = widget;
 				updateUrl(state.filters, window.location.href, state, page, false);
-				loadWidget(widget, { page: page, focusStatus: true });
+				loadWidget(widget, { page: page, focusResults: true });
 			}
 			return;
 		}
@@ -548,7 +613,7 @@
 			var parent = more.closest('.aomark-listings-results');
 			if (parent && parent.getAttribute('data-ajax') === 'yes') {
 				event.preventDefault();
-				loadWidget(parent, { page: more.getAttribute('data-page') || 1, append: true, focusStatus: false });
+				loadWidget(parent, { page: more.getAttribute('data-page') || 1, append: true });
 			}
 		}
 	});
@@ -566,7 +631,7 @@
 		state.widget = widget;
 		state.sort = event.target.value || '';
 		updateUrl(state.filters, window.location.href, state, 1, false);
-		loadWidget(widget, { page: 1, sort: state.sort, focusStatus: false });
+		loadWidget(widget, { page: 1, sort: state.sort, focusResults: true });
 	});
 
 	window.addEventListener('popstate', function(event){
@@ -590,7 +655,7 @@
 				if (state.filters === snapshot.filters && state.page === snapshot.page && state.sort === snapshot.sort) { return; }
 				loadWidget(widget, {
 					filters: snapshot.filters,
-					focusStatus: false,
+					focusResults: false,
 					page: snapshot.page,
 					sort: snapshot.sort
 				});
@@ -612,7 +677,7 @@
 				});
 				historySnapshots[snapshotKey(context)] = snapshot;
 				syncForms(snapshot.filters, context.connection, context.model);
-				loadWidget(widget, { filters: snapshot.filters, page: snapshot.page, sort: snapshot.sort, focusStatus: false });
+				loadWidget(widget, { filters: snapshot.filters, page: snapshot.page, sort: snapshot.sort, focusResults: false });
 			});
 		}
 		replaceCurrentHistoryState();
@@ -718,9 +783,9 @@
 				zoomControl: config.zoomControl !== false,
 				dragging: config.dragging !== false
 			});
-			window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			window.L.tileLayer(settings().tileUrl || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				maxZoom: 19,
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+				attribution: settings().tileAttribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 			}).addTo(element._aomarkMap);
 			element._aomarkMarkers = [];
 		}
@@ -776,7 +841,7 @@
 				if (state.filters !== saved.filters || state.page !== saved.page || state.sort !== saved.sort) {
 					restoring = true;
 					state.initialMapSync = true;
-					loadWidget(widget, { filters: saved.filters, page: saved.page, sort: saved.sort, focusStatus: false });
+					loadWidget(widget, { filters: saved.filters, page: saved.page, sort: saved.sort, focusResults: false });
 				}
 			} else if (key) {
 				snapshotForWidget(widget, state);

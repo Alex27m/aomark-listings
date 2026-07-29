@@ -1606,6 +1606,29 @@
 	outline: none;
 }
 
+.aomark-listings-location-consent {
+	background: rgba(168, 85, 247, 0.08);
+	border: 1px solid rgba(168, 85, 247, 0.3);
+	border-radius: var(--aomark-radius);
+	padding: 14px;
+}
+
+.aomark-listings-location-consent p {
+	color: var(--aomark-muted);
+	font-size: 12px;
+	line-height: 1.55;
+	margin: 0 0 10px;
+}
+
+.aomark-listings-location-consent a {
+	color: #d8b4fe;
+}
+
+.aomark-listings-location-consent.is-loaded {
+	background: rgba(34, 197, 94, 0.08);
+	border-color: rgba(34, 197, 94, 0.28);
+}
+
 .aomark-listings-location-map {
 	background: #111827;
 	border: 1px solid var(--aomark-border);
@@ -1614,6 +1637,10 @@
 	overflow: hidden;
 	position: relative;
 	z-index: 0;
+}
+
+.aomark-listings-location-map[hidden] {
+	display: none;
 }
 
 .aomark-listings-location-map .leaflet-control-zoom a {
