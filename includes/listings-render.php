@@ -385,11 +385,21 @@ function aomark_listings_render_filter( $settings = [] ) {
 						<?php continue; ?>
 					<?php endif; ?>
 					<?php if ( in_array( $field['type'], [ 'number', 'price' ], true ) ) : ?>
+						<?php
+						/* translators: %s: listing field label. */
+						$minimum_placeholder = sprintf( __( 'Min %s', 'aomark-listings' ), $field['label'] );
+						/* translators: %s: listing field label. */
+						$minimum_label = sprintf( __( 'Minimum %s', 'aomark-listings' ), $field['label'] );
+						/* translators: %s: listing field label. */
+						$maximum_placeholder = sprintf( __( 'Max %s', 'aomark-listings' ), $field['label'] );
+						/* translators: %s: listing field label. */
+						$maximum_label = sprintf( __( 'Maximum %s', 'aomark-listings' ), $field['label'] );
+						?>
 						<div class="aomark-listings-filter__field aomark-listings-filter__field--min">
-							<input type="number" step="any" name="<?php echo esc_attr( 'alm_min_' . $field['id'] ); ?>" value="<?php echo esc_attr( aomark_listings_request_value_for_model( $model, 'alm_min_' . $field['id'] ) ); ?>" placeholder="<?php echo esc_attr( sprintf( __( 'Min %s', 'aomark-listings' ), $field['label'] ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Minimum %s', 'aomark-listings' ), $field['label'] ) ); ?>">
+							<input type="number" step="any" name="<?php echo esc_attr( 'alm_min_' . $field['id'] ); ?>" value="<?php echo esc_attr( aomark_listings_request_value_for_model( $model, 'alm_min_' . $field['id'] ) ); ?>" placeholder="<?php echo esc_attr( $minimum_placeholder ); ?>" aria-label="<?php echo esc_attr( $minimum_label ); ?>">
 						</div>
 						<div class="aomark-listings-filter__field aomark-listings-filter__field--max">
-							<input type="number" step="any" name="<?php echo esc_attr( 'alm_max_' . $field['id'] ); ?>" value="<?php echo esc_attr( aomark_listings_request_value_for_model( $model, 'alm_max_' . $field['id'] ) ); ?>" placeholder="<?php echo esc_attr( sprintf( __( 'Max %s', 'aomark-listings' ), $field['label'] ) ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Maximum %s', 'aomark-listings' ), $field['label'] ) ); ?>">
+							<input type="number" step="any" name="<?php echo esc_attr( 'alm_max_' . $field['id'] ); ?>" value="<?php echo esc_attr( aomark_listings_request_value_for_model( $model, 'alm_max_' . $field['id'] ) ); ?>" placeholder="<?php echo esc_attr( $maximum_placeholder ); ?>" aria-label="<?php echo esc_attr( $maximum_label ); ?>">
 						</div>
 					<?php elseif ( 'select' === $field['type'] ) : ?>
 						<?php $selected = aomark_listings_request_value_for_model( $model, aomark_listings_filter_param( 'field_' . $field['id'] ) ); ?>
@@ -448,6 +458,7 @@ function aomark_listings_render_card( $post_id, $model, $settings ) {
 	}
 
 	$title            = get_the_title( $post_id );
+	/* translators: %d: listing post ID. */
 	$accessible_title = '' !== trim( (string) $title ) ? $title : sprintf( __( 'Listing %d', 'aomark-listings' ), $post_id );
 	$url              = get_permalink( $post_id );
 	$image_id = get_post_thumbnail_id( $post_id );
@@ -682,7 +693,11 @@ function aomark_listings_render_results_inner( $settings = [], $page = 1 ) {
 		<?php if ( 'yes' === $settings['show_count'] || 'yes' === $settings['show_sort'] ) : ?>
 			<div class="aomark-listings-results__bar">
 				<?php if ( 'yes' === $settings['show_count'] ) : ?>
-					<div class="aomark-listings-results__count"><?php echo esc_html( sprintf( _n( '%s listing', '%s listings', (int) $query->found_posts, 'aomark-listings' ), number_format_i18n( (int) $query->found_posts ) ) ); ?></div>
+					<?php
+					/* translators: %s: formatted number of listings. */
+					$results_count = sprintf( _n( '%s listing', '%s listings', (int) $query->found_posts, 'aomark-listings' ), number_format_i18n( (int) $query->found_posts ) );
+					?>
+					<div class="aomark-listings-results__count"><?php echo esc_html( $results_count ); ?></div>
 				<?php endif; ?>
 				<?php if ( 'yes' === $settings['show_sort'] ) : ?>
 					<form class="aomark-listings-results__sort" action="<?php echo esc_url( $settings['results_url'] ); ?>" method="get">

@@ -510,6 +510,7 @@ function aomark_listings_validate_model_registry( $models ) {
 		$id    = $model['id'];
 
 		if ( strlen( $id ) > 64 ) {
+			/* translators: %s: listing type ID. */
 			$errors->add( 'model_id_too_long', sprintf( __( 'Listing type ID “%s” must be 64 characters or fewer.', 'aomark-listings' ), $id ) );
 		}
 		if ( '' === trim( $model['singular'] ) || '' === trim( $model['plural'] ) ) {
@@ -517,13 +518,16 @@ function aomark_listings_validate_model_registry( $models ) {
 		}
 
 		if ( isset( $model_ids[ $id ] ) ) {
+			/* translators: %s: listing type ID. */
 			$errors->add( 'duplicate_model_id', sprintf( __( 'Listing type ID “%s” is already in use.', 'aomark-listings' ), $id ) );
 		}
 		$model_ids[ $id ] = true;
 
 		if ( isset( $post_types[ $model['post_type'] ] ) ) {
+			/* translators: %s: WordPress post type key. */
 			$errors->add( 'duplicate_post_type', sprintf( __( 'Post type key “%s” is used by more than one listing type.', 'aomark-listings' ), $model['post_type'] ) );
 		} elseif ( post_type_exists( $model['post_type'] ) && empty( $owned_post_types[ $model['post_type'] ] ) ) {
+			/* translators: %s: WordPress post type key. */
 			$errors->add( 'registered_post_type', sprintf( __( 'Post type key “%s” is already registered by WordPress, the theme, or another plugin.', 'aomark-listings' ), $model['post_type'] ) );
 		}
 		$post_types[ $model['post_type'] ] = $id;
@@ -534,19 +538,24 @@ function aomark_listings_validate_model_registry( $models ) {
 
 		foreach ( (array) $model['taxonomies'] as $taxonomy ) {
 			if ( strlen( $taxonomy['id'] ) > 64 ) {
+				/* translators: %s: category/filter group ID. */
 				$errors->add( 'taxonomy_id_too_long', sprintf( __( 'Category/filter ID “%s” must be 64 characters or fewer.', 'aomark-listings' ), $taxonomy['id'] ) );
 			}
 			if ( '' === trim( $taxonomy['singular'] ) || '' === trim( $taxonomy['plural'] ) ) {
+				/* translators: %s: plural listing type name. */
 				$errors->add( 'missing_taxonomy_labels', sprintf( __( 'Every category/filter group in %s needs both a singular and plural name.', 'aomark-listings' ), $model['plural'] ) );
 			}
 			if ( isset( $taxonomy_ids[ $taxonomy['id'] ] ) ) {
+				/* translators: 1: category/filter group ID, 2: plural listing type name. */
 				$errors->add( 'duplicate_taxonomy_id', sprintf( __( 'Category/filter ID “%1$s” is duplicated in %2$s.', 'aomark-listings' ), $taxonomy['id'], $model['plural'] ) );
 			}
 			$taxonomy_ids[ $taxonomy['id'] ] = true;
 
 			if ( isset( $taxonomy_slugs[ $taxonomy['slug'] ] ) ) {
+				/* translators: %s: WordPress taxonomy key. */
 				$errors->add( 'duplicate_taxonomy_slug', sprintf( __( 'Taxonomy key “%s” is used more than once.', 'aomark-listings' ), $taxonomy['slug'] ) );
 			} elseif ( taxonomy_exists( $taxonomy['slug'] ) && empty( $owned_taxonomies[ $taxonomy['slug'] ] ) ) {
+				/* translators: %s: WordPress taxonomy key. */
 				$errors->add( 'registered_taxonomy', sprintf( __( 'Taxonomy key “%s” is already registered by WordPress, the theme, or another plugin.', 'aomark-listings' ), $taxonomy['slug'] ) );
 			}
 			$taxonomy_slugs[ $taxonomy['slug'] ] = $id;
@@ -554,12 +563,15 @@ function aomark_listings_validate_model_registry( $models ) {
 
 		foreach ( (array) $model['fields'] as $field ) {
 			if ( strlen( $field['id'] ) > 64 ) {
+				/* translators: 1: field ID, 2: plural listing type name. */
 				$errors->add( 'field_id_too_long', sprintf( __( 'Field ID “%1$s” in %2$s must be 64 characters or fewer.', 'aomark-listings' ), $field['id'], $model['plural'] ) );
 			}
 			if ( strlen( $field['key'] ) > 191 ) {
+				/* translators: 1: field meta key, 2: plural listing type name. */
 				$errors->add( 'field_key_too_long', sprintf( __( 'Meta key “%1$s” in %2$s must be 191 characters or fewer.', 'aomark-listings' ), $field['key'], $model['plural'] ) );
 			}
 			if ( isset( $field_ids[ $field['id'] ] ) ) {
+				/* translators: 1: field ID, 2: plural listing type name. */
 				$errors->add( 'duplicate_field_id', sprintf( __( 'Field ID “%1$s” is duplicated in %2$s.', 'aomark-listings' ), $field['id'], $model['plural'] ) );
 			}
 			$field_ids[ $field['id'] ] = true;
@@ -573,6 +585,7 @@ function aomark_listings_validate_model_registry( $models ) {
 
 			foreach ( $storage_keys as $storage_key ) {
 				if ( isset( $field_keys[ $storage_key ] ) ) {
+					/* translators: 1: generated field storage key, 2: plural listing type name. */
 					$errors->add( 'duplicate_field_key', sprintf( __( 'Storage key “%1$s” is generated more than once in %2$s.', 'aomark-listings' ), $storage_key, $model['plural'] ) );
 				}
 				$field_keys[ $storage_key ] = true;
@@ -706,6 +719,7 @@ function aomark_listings_get_model_options() {
 		$label = $model['plural'];
 		if ( $totals[ $label ] > 1 ) {
 			$seen[ $label ] = ( $seen[ $label ] ?? 0 ) + 1;
+			/* translators: 1: plural listing type name, 2: occurrence number. */
 			$label = sprintf( __( '%1$s — type %2$d', 'aomark-listings' ), $label, $seen[ $model['plural'] ] );
 		}
 		$options[ $model['id'] ] = $label;
@@ -797,12 +811,19 @@ function aomark_listings_register_content_types() {
 				'labels'       => [
 					'name'               => $model['plural'],
 					'singular_name'      => $model['singular'],
+					/* translators: %s: singular listing type name. */
 					'add_new_item'       => sprintf( __( 'Add New %s', 'aomark-listings' ), $model['singular'] ),
+					/* translators: %s: singular listing type name. */
 					'edit_item'          => sprintf( __( 'Edit %s', 'aomark-listings' ), $model['singular'] ),
+					/* translators: %s: singular listing type name. */
 					'new_item'           => sprintf( __( 'New %s', 'aomark-listings' ), $model['singular'] ),
+					/* translators: %s: singular listing type name. */
 					'view_item'          => sprintf( __( 'View %s', 'aomark-listings' ), $model['singular'] ),
+					/* translators: %s: plural listing type name. */
 					'search_items'       => sprintf( __( 'Search %s', 'aomark-listings' ), $model['plural'] ),
+					/* translators: %s: lowercase plural listing type name. */
 					'not_found'          => sprintf( __( 'No %s found', 'aomark-listings' ), strtolower( $model['plural'] ) ),
+					/* translators: %s: lowercase plural listing type name. */
 					'not_found_in_trash' => sprintf( __( 'No %s found in Trash', 'aomark-listings' ), strtolower( $model['plural'] ) ),
 				],
 				'public'       => true,
@@ -822,9 +843,13 @@ function aomark_listings_register_content_types() {
 					'labels'            => [
 						'name'          => $taxonomy['plural'],
 						'singular_name' => $taxonomy['singular'],
+						/* translators: %s: plural taxonomy name. */
 						'search_items'  => sprintf( __( 'Search %s', 'aomark-listings' ), $taxonomy['plural'] ),
+						/* translators: %s: plural taxonomy name. */
 						'all_items'     => sprintf( __( 'All %s', 'aomark-listings' ), $taxonomy['plural'] ),
+						/* translators: %s: singular taxonomy name. */
 						'edit_item'     => sprintf( __( 'Edit %s', 'aomark-listings' ), $taxonomy['singular'] ),
+						/* translators: %s: singular taxonomy name. */
 						'add_new_item'  => sprintf( __( 'Add New %s', 'aomark-listings' ), $taxonomy['singular'] ),
 					],
 					'public'            => true,
@@ -1041,6 +1066,7 @@ function aomark_listings_add_meta_boxes() {
 	foreach ( aomark_listings_get_models() as $model ) {
 		add_meta_box(
 			'aomark_listings_fields',
+			/* translators: %s: singular listing type name. */
 			sprintf( __( '%s Fields', 'aomark-listings' ), $model['singular'] ),
 			'aomark_listings_render_meta_box',
 			$model['post_type'],

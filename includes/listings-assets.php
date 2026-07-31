@@ -124,7 +124,9 @@ function aomark_listings_register_assets() {
 				'loadError'      => __( 'Listings could not be loaded. Please try again.', 'aomark-listings' ),
 				'retry'          => __( 'Retry', 'aomark-listings' ),
 				'resultsUpdated' => __( 'Listing results updated.', 'aomark-listings' ),
+				/* translators: %d: number of listings found. */
 				'resultsCount'   => __( '%d listings found.', 'aomark-listings' ),
+				/* translators: 1: number of newly added listings, 2: total number of listings. */
 				'resultsAdded'   => __( 'Listings added: %1$d. Total: %2$d.', 'aomark-listings' ),
 				'mapEmpty'       => __( 'No listing locations match the current filters.', 'aomark-listings' ),
 				'mapLabel'       => __( 'Listing locations', 'aomark-listings' ),

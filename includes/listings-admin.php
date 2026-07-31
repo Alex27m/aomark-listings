@@ -563,6 +563,7 @@ function aomark_listings_admin_enqueue( $hook ) {
 					'availableFilter'   => __( 'Available as a filter', 'aomark-listings' ),
 					'organizationOnly'  => __( 'Organization only', 'aomark-listings' ),
 					'automatic'         => __( 'Automatic', 'aomark-listings' ),
+					/* translators: %s: automatically selected field group label. */
 					'automaticGroup'    => __( 'Automatic · %s', 'aomark-listings' ),
 					'features'          => __( 'Features', 'aomark-listings' ),
 					'location'          => __( 'Location', 'aomark-listings' ),
@@ -1235,6 +1236,7 @@ function aomark_listings_render_field_row( $field, $index, $field_types ) {
 		'media'    => __( 'Media', 'aomark-listings' ),
 	];
 	$effective_group = aomark_listings_metabox_group_for_field( $field );
+	/* translators: %s: automatically selected field group label. */
 	$summary_group   = $group ? ( $group_options[ $group ] ?? $group_options[''] ) : sprintf( __( 'Automatic · %s', 'aomark-listings' ), aomark_listings_metabox_group_label( $effective_group ) );
 	$filter_supported = ! in_array( $type, [ 'image', 'gallery', 'location', 'textarea' ], true );
 	?>
