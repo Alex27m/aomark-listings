@@ -1,35 +1,48 @@
 <?php
 /**
- * Plugin Name: Aomark Listings
- * Description: Elementor-first listing models, custom post types, fields, filters, maps and listing widgets by Aomark.io.
- * Version: 3.4.0
- * Author: Aomark.io
- * Author URI: https://aomark.io
- * Text Domain: aomark-listings
+ * Legacy bootstrap for installations activated before the canonical
+ * aomark-listings.php entry point was introduced.
+ *
+ * @package Aomark_Listings
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'AOMARK_LISTINGS_VERSION', '3.4.0' );
-define( 'AOMARK_LISTINGS_PLUGIN_FILE', __FILE__ );
-define( 'AOMARK_LISTINGS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'AOMARK_LISTINGS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+require_once __DIR__ . '/aomark-listings.php';
 
-$files = [
-	'includes/listings-models.php',
-	'includes/listings-admin.php',
-	'includes/listings-assets.php',
-	'includes/listings-query.php',
-	'includes/listings-render.php',
-	'includes/listings-elementor-controls.php',
-	'widgets/elementor-widgets.php',
-];
+/**
+ * Replace the historical active-plugin basename with the canonical one.
+ */
+function aomark_listings_migrate_legacy_plugin_basename() {
+	$legacy_basename    = plugin_basename( __FILE__ );
+	$canonical_basename = plugin_basename( AOMARK_LISTINGS_PLUGIN_FILE );
 
-foreach ( $files as $file ) {
-	require_once AOMARK_LISTINGS_PLUGIN_DIR . $file;
+	if ( $legacy_basename === $canonical_basename ) {
+		return;
+	}
+
+	$active_plugins = get_option( 'active_plugins', [] );
+	if ( is_array( $active_plugins ) && in_array( $legacy_basename, $active_plugins, true ) ) {
+		$active_plugins = array_map(
+			static function ( $basename ) use ( $legacy_basename, $canonical_basename ) {
+				return $legacy_basename === $basename ? $canonical_basename : $basename;
+			},
+			$active_plugins
+		);
+		update_option( 'active_plugins', array_values( array_unique( $active_plugins ) ) );
+	}
+
+	if ( is_multisite() ) {
+		$network_plugins = get_site_option( 'active_sitewide_plugins', [] );
+		if ( is_array( $network_plugins ) && isset( $network_plugins[ $legacy_basename ] ) ) {
+			$activated_at = $network_plugins[ $legacy_basename ];
+			unset( $network_plugins[ $legacy_basename ] );
+			$network_plugins[ $canonical_basename ] = $activated_at;
+			update_site_option( 'active_sitewide_plugins', $network_plugins );
+		}
+	}
 }
 
-register_activation_hook( __FILE__, 'aomark_listings_activate' );
-register_deactivation_hook( __FILE__, 'aomark_listings_deactivate' );
+aomark_listings_migrate_legacy_plugin_basename();

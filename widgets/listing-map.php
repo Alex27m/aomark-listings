@@ -9,8 +9,8 @@ class Aomark_Listings_Map_Widget extends \Elementor\Widget_Base {
 	public function get_icon(): string { return 'eicon-google-maps'; }
 	public function get_categories(): array { return [ 'aomark-listings' ]; }
 	public function get_keywords(): array { return [ 'aomark', 'listings', 'map', 'location', 'property' ]; }
-	public function get_style_depends(): array { aomark_listings_enqueue_map_assets(); return [ 'aomark-listings', 'leaflet' ]; }
-	public function get_script_depends(): array { aomark_listings_enqueue_map_assets(); return [ 'leaflet', 'aomark-listings' ]; }
+	public function get_style_depends(): array { return [ 'aomark-listings', 'aomark-listings-leaflet' ]; }
+	public function get_script_depends(): array { return [ 'aomark-listings-leaflet', 'aomark-listings' ]; }
 
 	protected function register_controls(): void {
 		$this->start_controls_section( 'section_map', [ 'label' => esc_html__( 'Map', 'aomark-listings' ) ] );
@@ -18,7 +18,7 @@ class Aomark_Listings_Map_Widget extends \Elementor\Widget_Base {
 		$this->add_control( 'source', [ 'label' => esc_html__( 'Source', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT, 'default' => 'query', 'options' => [ 'query' => esc_html__( 'Query Results', 'aomark-listings' ), 'current' => esc_html__( 'Current Listing', 'aomark-listings' ) ] ] );
 		$this->add_control( 'post_id', [ 'label' => esc_html__( 'Listing ID', 'aomark-listings' ), 'description' => esc_html__( 'Optional. Leave empty to use the current listing.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'min' => 1, 'condition' => [ 'source' => 'current' ] ] );
 		$this->add_control( 'read_url_filters', [ 'label' => esc_html__( 'Read URL Filters', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes', 'condition' => [ 'source' => 'query' ] ] );
-		$this->add_control( 'map_limit', [ 'label' => esc_html__( 'Maximum Pins', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 200, 'min' => 1, 'max' => 500, 'condition' => [ 'source' => 'query' ] ] );
+		$this->add_control( 'map_limit', [ 'label' => esc_html__( 'Maximum Pins', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 200, 'min' => 1, 'max' => 200, 'condition' => [ 'source' => 'query' ] ] );
 		$this->add_control( 'zoom', [ 'label' => esc_html__( 'Single Pin Zoom', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 10, 'min' => 2, 'max' => 18 ] );
 		$this->add_control( 'fit_bounds', [ 'label' => esc_html__( 'Fit All Pins', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes', 'condition' => [ 'source' => 'query' ] ] );
 		$this->add_control( 'scroll_wheel_zoom', [ 'label' => esc_html__( 'Scroll Wheel Zoom', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'no' ] );
@@ -33,6 +33,19 @@ class Aomark_Listings_Map_Widget extends \Elementor\Widget_Base {
 		$this->add_control( 'currency', [ 'label' => esc_html__( 'Currency', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => '$', 'condition' => [ 'popup_price' => 'yes' ] ] );
 		$this->add_control( 'decimals', [ 'label' => esc_html__( 'Price Decimals', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 0, 'min' => 0, 'max' => 4, 'condition' => [ 'popup_price' => 'yes' ] ] );
 		$this->add_control( 'popup_address', [ 'label' => esc_html__( 'Address', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes' ] );
+		$this->end_controls_section();
+
+		$this->start_controls_section( 'section_advanced_connection', [ 'label' => esc_html__( 'Advanced', 'aomark-listings' ) ] );
+		$this->add_control(
+			'connection_id',
+			[
+				'label'       => esc_html__( 'Connection ID', 'aomark-listings' ),
+				'description' => esc_html__( 'Optional. Use the same ID on Listing Results when a page contains more than one listings view.', 'aomark-listings' ),
+				'type'        => \Elementor\Controls_Manager::TEXT,
+				'label_block' => true,
+				'condition'   => [ 'source' => 'query' ],
+			]
+		);
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_style_map', [ 'label' => esc_html__( 'Map', 'aomark-listings' ), 'tab' => \Elementor\Controls_Manager::TAB_STYLE ] );
@@ -67,6 +80,27 @@ class Aomark_Listings_Map_Widget extends \Elementor\Widget_Base {
 	}
 
 	protected function render(): void {
-		echo aomark_listings_render_map( $this->get_settings_for_display() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$settings      = $this->get_settings_for_display();
+		$connection_id = sanitize_key( $settings['connection_id'] ?? '' );
+		$model          = aomark_listings_get_model( $settings['model_id'] ?? '' );
+		$model_id       = $model ? $model['id'] : sanitize_key( $settings['model_id'] ?? '' );
+		$source        = in_array( (string) ( $settings['source'] ?? 'query' ), [ 'current', 'single' ], true ) ? 'current' : 'query';
+		$empty_message = sanitize_text_field( $settings['empty_message'] ?? __( 'No mapped listings found.', 'aomark-listings' ) );
+		$map_config    = [
+			'queryMap'        => 'query' === $source,
+			'zoom'            => max( 2, min( 18, absint( $settings['zoom'] ?? 10 ) ) ),
+			'fitBounds'       => 'yes' === ( $settings['fit_bounds'] ?? 'yes' ),
+			'scrollWheelZoom' => 'yes' === ( $settings['scroll_wheel_zoom'] ?? 'no' ),
+			'zoomControl'     => 'yes' === ( $settings['zoom_control'] ?? 'yes' ),
+			'dragging'        => 'yes' === ( $settings['dragging'] ?? 'yes' ),
+			'popupImage'      => 'yes' === ( $settings['popup_image'] ?? 'yes' ),
+			'popupPrice'      => 'yes' === ( $settings['popup_price'] ?? 'yes' ),
+			'popupAddress'    => 'yes' === ( $settings['popup_address'] ?? 'yes' ),
+		];
+		?>
+		<div class="aomark-listings-component aomark-listings-component--map" data-aomark-component="map" data-aomark-connection="<?php echo esc_attr( $connection_id ); ?>" data-model-id="<?php echo esc_attr( $model_id ); ?>" data-map-source="<?php echo esc_attr( $source ); ?>" data-map-config="<?php echo esc_attr( wp_json_encode( $map_config ) ); ?>" data-empty-message="<?php echo esc_attr( $empty_message ); ?>">
+			<?php echo aomark_listings_render_map( $settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		</div>
+		<?php
 	}
 }

@@ -20,6 +20,29 @@ function aomark_listings_elementor_category( $elements_manager ) {
 }
 add_action( 'elementor/elements/categories_registered', 'aomark_listings_elementor_category' );
 
+/**
+ * Whether a widget is currently being rendered inside the Elementor editor.
+ *
+ * @return bool
+ */
+function aomark_listings_is_elementor_edit_mode() {
+	return class_exists( '\\Elementor\\Plugin' )
+		&& isset( \Elementor\Plugin::instance()->editor )
+		&& \Elementor\Plugin::instance()->editor->is_edit_mode();
+}
+
+/**
+ * Render a useful editor-only empty state without leaking configuration details
+ * to public visitors.
+ *
+ * @param string $message Notice text.
+ */
+function aomark_listings_elementor_editor_notice( $message ) {
+	if ( aomark_listings_is_elementor_edit_mode() ) {
+		echo '<div class="aomark-listings-editor-notice" role="status">' . esc_html( $message ) . '</div>';
+	}
+}
+
 function aomark_listings_all_field_options( $types = [] ) {
 	$types = array_filter( (array) $types );
 	$options = [];
@@ -93,7 +116,7 @@ function aomark_listings_normalize_selected_ids( $raw, $model_id = '' ) {
 
 		if ( false !== strpos( $value, ':' ) ) {
 			$parts = explode( ':', $value, 2 );
-			if ( $model_id && sanitize_key( $parts[0] ) !== sanitize_key( $model_id ) ) {
+			if ( '' !== (string) $model_id && sanitize_key( $parts[0] ) !== sanitize_key( $model_id ) ) {
 				continue;
 			}
 			$value = $parts[1];
@@ -319,7 +342,7 @@ function aomark_listings_resolve_field_setting( $settings, $allowed_types = [] )
 	}
 
 	$model = aomark_listings_get_model( $model_id );
-	$field = aomark_listings_get_field( $model, $field_id );
+	$field = $model ? aomark_listings_get_field( $model, $field_id ) : null;
 
 	if ( $field && ! empty( $allowed_types ) && ! in_array( $field['type'], (array) $allowed_types, true ) ) {
 		$field = null;
@@ -331,16 +354,18 @@ function aomark_listings_resolve_field_setting( $settings, $allowed_types = [] )
 function aomark_listings_add_model_control( $widget, $default = '' ) {
 	$options = aomark_listings_get_model_options();
 	$keys    = array_keys( $options );
-	$default = $default ?: ( $keys[0] ?? '' );
+	$default = is_scalar( $default ) ? sanitize_key( (string) $default ) : '';
+	$default = '' !== $default ? $default : ( $keys[0] ?? '' );
 
 	$widget->add_control(
 		'model_id',
 		[
-			'label'       => esc_html__( 'Listing Model', 'aomark-listings' ),
+			'label'       => esc_html__( 'Listing Type', 'aomark-listings' ),
 			'type'        => \Elementor\Controls_Manager::SELECT,
 			'options'     => $options,
 			'default'     => $default,
 			'label_block' => true,
+			'description' => esc_html__( 'Choose the content type this widget should use.', 'aomark-listings' ),
 		]
 	);
 }
@@ -349,7 +374,7 @@ function aomark_listings_add_query_controls( $widget ) {
 	$widget->start_controls_section(
 		'section_query',
 		[
-			'label' => esc_html__( 'Query', 'aomark-listings' ),
+			'label' => esc_html__( 'Content Source', 'aomark-listings' ),
 			'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
 		]
 	);
@@ -370,10 +395,11 @@ function aomark_listings_add_query_controls( $widget ) {
 	$widget->add_control(
 		'read_url_filters',
 		[
-			'label'        => esc_html__( 'Read URL Filters', 'aomark-listings' ),
+			'label'        => esc_html__( 'Use Filters From Page URL', 'aomark-listings' ),
 			'type'         => \Elementor\Controls_Manager::SWITCHER,
 			'return_value' => 'yes',
 			'default'      => 'yes',
+			'description'  => esc_html__( 'Keeps this view in sync with filter forms, shared links, and browser navigation.', 'aomark-listings' ),
 		]
 	);
 
@@ -415,10 +441,11 @@ function aomark_listings_add_query_controls( $widget ) {
 	$widget->add_control(
 		'taxonomy_filters',
 		[
-			'label'       => esc_html__( 'Taxonomy Filters', 'aomark-listings' ),
+			'label'       => esc_html__( 'Fixed Category Filters', 'aomark-listings' ),
 			'type'        => \Elementor\Controls_Manager::REPEATER,
 			'fields'      => $taxonomy_repeater->get_controls(),
 			'title_field' => '{{{ taxonomy_id }}}',
+			'description' => esc_html__( 'Advanced: permanently restrict this widget to selected terms.', 'aomark-listings' ),
 		]
 	);
 
@@ -435,16 +462,16 @@ function aomark_listings_add_query_controls( $widget ) {
 	$meta_repeater->add_control(
 		'compare',
 		[
-			'label'   => esc_html__( 'Compare', 'aomark-listings' ),
+			'label'   => esc_html__( 'Match', 'aomark-listings' ),
 			'type'    => \Elementor\Controls_Manager::SELECT,
 			'default' => '=',
 			'options' => [
-				'='    => '=',
-				'LIKE' => 'Contains',
-				'>='   => '>=',
-				'<='   => '<=',
-				'>'    => '>',
-				'<'    => '<',
+				'='    => esc_html__( 'Is', 'aomark-listings' ),
+				'LIKE' => esc_html__( 'Contains', 'aomark-listings' ),
+				'>='   => esc_html__( 'At least', 'aomark-listings' ),
+				'<='   => esc_html__( 'At most', 'aomark-listings' ),
+				'>'    => esc_html__( 'Greater than', 'aomark-listings' ),
+				'<'    => esc_html__( 'Less than', 'aomark-listings' ),
 			],
 		]
 	);
@@ -458,10 +485,11 @@ function aomark_listings_add_query_controls( $widget ) {
 	$widget->add_control(
 		'meta_filters',
 		[
-			'label'       => esc_html__( 'Meta Filters', 'aomark-listings' ),
+			'label'       => esc_html__( 'Fixed Field Filters', 'aomark-listings' ),
 			'type'        => \Elementor\Controls_Manager::REPEATER,
 			'fields'      => $meta_repeater->get_controls(),
 			'title_field' => '{{{ field_id }}} {{{ compare }}} {{{ value }}}',
+			'description' => esc_html__( 'Advanced: permanently restrict this widget by structured field values.', 'aomark-listings' ),
 		]
 	);
 

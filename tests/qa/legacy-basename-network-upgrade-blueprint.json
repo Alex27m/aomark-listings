@@ -1,0 +1,58 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "meta": {
+    "title": "Aomark Listings network legacy basename upgrade QA",
+    "description": "Verifies the exact 3.5.1 to 3.5.2 main-filename migration for a network-activated plugin.",
+    "author": "aomark"
+  },
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "latest"
+  },
+  "steps": [
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_LOG": true,
+        "WP_DEBUG_DISPLAY": false,
+        "WP_DISABLE_FATAL_ERROR_HANDLER": true
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php $hashes = [ 'old' => hash_file( 'sha256', '/tmp/aomark-old/aomark-listings-3.5.1-wporg-final-20260731.zip' ), 'new' => hash_file( 'sha256', '/tmp/aomark-new/aomark-listings.zip' ) ]; if ( ! hash_equals( '0181d246cf09cb6a56abe1e74bc3936ec896008d8800417e76d1b92bcb80b20e', (string) $hashes['old'] ) || ! hash_equals( 'f579fbe2786a3b29982b25e41460b1393d160577e7da439da4f9dbb91c901684', (string) $hashes['new'] ) ) { throw new RuntimeException( 'Exact ZIP checksum precondition failed: ' . json_encode( $hashes ) ); }"
+    },
+    {
+      "step": "enableMultisite"
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "vfs",
+        "path": "/tmp/aomark-old/aomark-listings-3.5.1-wporg-final-20260731.zip"
+      },
+      "options": {
+        "activate": false,
+        "targetFolderName": "aomark-listings",
+        "onError": "throw"
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/plugin.php'; $result = activate_plugin( 'aomark-listings/aomark-real-estate.php', '', true, true ); $active = array_keys( (array) get_site_option( 'active_sitewide_plugins', [] ) ); $models = get_option( 'aomark_listings_models', '__aomark_listings_missing__' ); if ( ! is_array( $models ) && function_exists( 'aomark_listings_default_models' ) ) { $models = aomark_listings_default_models(); update_option( 'aomark_listings_models', $models, false ); } $checks = [ 'activation' => ! is_wp_error( $result ), 'version' => defined( 'AOMARK_LISTINGS_VERSION' ) && '3.5.1' === AOMARK_LISTINGS_VERSION, 'legacy_active' => in_array( 'aomark-listings/aomark-real-estate.php', $active, true ), 'models_array' => is_array( $models ) && ! empty( $models ) ]; if ( in_array( false, $checks, true ) ) { throw new RuntimeException( 'Exact 3.5.1 network activation precondition failed: ' . wp_json_encode( $checks ) ); } update_option( 'aomark_listings_legacy_models_hash', hash( 'sha256', maybe_serialize( $models ) ), false );"
+    },
+    {
+      "step": "unzip",
+      "zipFile": {
+        "resource": "vfs",
+        "path": "/tmp/aomark-new/aomark-listings.zip"
+      },
+      "extractToPath": "/wordpress/wp-content/plugins"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require '/wordpress/wp-load.php'; require '/tmp/aomark-qa/legacy-basename-fixture.php';"
+    }
+  ]
+}

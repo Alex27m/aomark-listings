@@ -9,17 +9,20 @@ class Aomark_Listings_Gallery_Widget extends \Elementor\Widget_Base {
 	public function get_icon(): string { return 'eicon-gallery-grid'; }
 	public function get_categories(): array { return [ 'aomark-listings' ]; }
 	public function get_keywords(): array { return [ 'aomark', 'listings', 'gallery', 'image', 'photos' ]; }
-	public function get_style_depends(): array { aomark_listings_register_assets(); return [ 'aomark-listings' ]; }
+	public function get_style_depends(): array { return [ 'aomark-listings' ]; }
 
 	protected function register_controls(): void {
-		$this->start_controls_section( 'section_gallery', [ 'label' => esc_html__( 'Gallery', 'aomark-listings' ) ] );
+		$this->start_controls_section( 'section_gallery', [ 'label' => esc_html__( 'Content', 'aomark-listings' ) ] );
 		aomark_listings_add_model_control( $this );
-		$this->add_control( 'field_id', [ 'label' => esc_html__( 'Image / Gallery Field', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT2, 'options' => aomark_listings_all_field_options( [ 'image', 'gallery' ] ), 'label_block' => true ] );
-		$this->add_control( 'post_id', [ 'label' => esc_html__( 'Listing ID', 'aomark-listings' ), 'description' => esc_html__( 'Optional. Leave empty to use the current listing.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'min' => 1 ] );
+		$this->add_control( 'field_id', [ 'label' => esc_html__( 'Image / Gallery Field', 'aomark-listings' ), 'description' => esc_html__( 'Only compatible image and gallery fields are shown.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT2, 'options' => aomark_listings_all_field_options( [ 'image', 'gallery' ] ), 'label_block' => true ] );
 		$this->add_control( 'image_size', [ 'label' => esc_html__( 'Image Size', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT, 'options' => aomark_listings_image_size_options(), 'default' => 'medium_large' ] );
-		$this->add_control( 'max_images', [ 'label' => esc_html__( 'Maximum Images', 'aomark-listings' ), 'description' => esc_html__( 'Use 0 to show all images.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 0, 'min' => 0, 'max' => 100 ] );
+		$this->add_control( 'max_images', [ 'label' => esc_html__( 'Maximum Images', 'aomark-listings' ), 'description' => esc_html__( 'Existing zero values are safely capped at 100 images.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 24, 'min' => 1, 'max' => 100 ] );
 		$this->add_control( 'link_to', [ 'label' => esc_html__( 'Link', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT, 'default' => 'media', 'options' => [ 'media' => esc_html__( 'Media File', 'aomark-listings' ), 'none' => esc_html__( 'None', 'aomark-listings' ) ] ] );
 		$this->add_control( 'lightbox', [ 'label' => esc_html__( 'Lightbox', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes', 'condition' => [ 'link_to' => 'media' ] ] );
+		$this->end_controls_section();
+
+		$this->start_controls_section( 'section_advanced', [ 'label' => esc_html__( 'Advanced', 'aomark-listings' ) ] );
+		$this->add_control( 'post_id', [ 'label' => esc_html__( 'Preview a Specific Listing ID', 'aomark-listings' ), 'description' => esc_html__( 'Leave empty to use the current listing automatically. Use this only for an editor preview override.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'min' => 1 ] );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_style_layout', [ 'label' => esc_html__( 'Layout', 'aomark-listings' ), 'tab' => \Elementor\Controls_Manager::TAB_STYLE ] );
@@ -54,6 +57,9 @@ class Aomark_Listings_Gallery_Widget extends \Elementor\Widget_Base {
 		if ( $model && $field ) {
 			$settings['model_id'] = $model['id'];
 			$settings['field_id'] = $field['id'];
+		} else {
+			aomark_listings_elementor_editor_notice( __( 'Choose a listing type and image/gallery field to preview this widget.', 'aomark-listings' ) );
+			return;
 		}
 		echo aomark_listings_render_gallery( $settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}

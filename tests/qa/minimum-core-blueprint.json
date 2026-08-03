@@ -1,0 +1,38 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "meta": {
+    "title": "Aomark Listings minimum core QA",
+    "description": "Disposable WordPress 6.0 and PHP 7.4 environment without Elementor or WooCommerce.",
+    "author": "aomark"
+  },
+  "preferredVersions": {
+    "php": "7.4",
+    "wp": "6.0"
+  },
+  "landingPage": "/aomark-listings-qa/",
+  "login": true,
+  "siteOptions": {
+    "blogname": "Aomark Listings Minimum Core QA",
+    "blogdescription": "Disposable minimum-version native model fixture"
+  },
+  "steps": [
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_LOG": true,
+        "WP_DEBUG_DISPLAY": false,
+        "SCRIPT_DEBUG": true,
+        "WP_DISABLE_FATAL_ERROR_HANDLER": true
+      }
+    },
+    {
+      "step": "activatePlugin",
+      "pluginPath": "/wordpress/wp-content/plugins/aomark-listings/aomark-listings.php"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php define( 'AOMARK_LISTINGS_QA_EXPECT_ELEMENTOR', false ); define( 'AOMARK_LISTINGS_QA_EXPECT_WOOCOMMERCE', false ); require_once '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/aomark-listings/tests/qa/fixture.php';"
+    }
+  ]
+}

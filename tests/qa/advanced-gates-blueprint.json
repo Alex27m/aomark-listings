@@ -1,0 +1,42 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "meta": {
+    "title": "Aomark Listings advanced release-gate QA",
+    "description": "Disposable legacy-upgrade, visibility, capability, signed-descriptor and bounded 300-record stress checks.",
+    "author": "aomark"
+  },
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "latest"
+  },
+  "landingPage": "/wp-admin/",
+  "login": true,
+  "siteOptions": {
+    "blogname": "Aomark Listings Advanced QA",
+    "blogdescription": "Disposable higher-risk release-gate fixture"
+  },
+  "steps": [
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_LOG": true,
+        "WP_DEBUG_DISPLAY": true,
+        "SCRIPT_DEBUG": true,
+        "WP_DISABLE_FATAL_ERROR_HANDLER": true
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/aomark-listings/tests/qa/advanced-gates-seed.php';"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/plugin.php'; $plugin = file_exists( '/wordpress/wp-content/plugins/aomark-listings/aomark-listings.php' ) ? 'aomark-listings/aomark-listings.php' : 'aomark-listings/aomark-real-estate.php'; $activated = activate_plugin( $plugin ); if ( is_wp_error( $activated ) ) { throw new RuntimeException( $activated->get_error_message() ); } echo wp_json_encode( array( 'status' => 'activated', 'plugin' => $plugin ) );"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/aomark-listings/tests/qa/advanced-gates-fixture.php';"
+    }
+  ]
+}

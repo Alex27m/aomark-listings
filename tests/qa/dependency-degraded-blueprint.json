@@ -1,0 +1,58 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "meta": {
+    "title": "Aomark Listings dependency-degraded QA",
+    "description": "Disposable PHP 8.3 WordPress with Hello Elementor and WooCommerce, but without Elementor, for native Listings model and renderer coverage.",
+    "author": "aomark"
+  },
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "latest"
+  },
+  "landingPage": "/aomark-listings-qa/",
+  "login": true,
+  "siteOptions": {
+    "blogname": "Aomark Listings Degraded QA",
+    "blogdescription": "Disposable no-Elementor dependency fixture"
+  },
+  "steps": [
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_LOG": true,
+        "WP_DEBUG_DISPLAY": false,
+        "SCRIPT_DEBUG": true,
+        "WP_DISABLE_FATAL_ERROR_HANDLER": true
+      }
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "wordpress.org/plugins",
+        "slug": "woocommerce"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "installTheme",
+      "themeData": {
+        "resource": "wordpress.org/themes",
+        "slug": "hello-elementor"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "activatePlugin",
+      "pluginPath": "/wordpress/wp-content/plugins/aomark-listings/aomark-listings.php"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php define( 'AOMARK_LISTINGS_QA_EXPECT_ELEMENTOR', false ); define( 'AOMARK_LISTINGS_QA_EXPECT_WOOCOMMERCE', true ); require_once '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/aomark-listings/tests/qa/fixture.php';"
+    }
+  ]
+}

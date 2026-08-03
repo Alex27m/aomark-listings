@@ -9,17 +9,13 @@ class Aomark_Listings_Field_Widget extends \Elementor\Widget_Base {
 	public function get_icon(): string { return 'eicon-code'; }
 	public function get_categories(): array { return [ 'aomark-listings' ]; }
 	public function get_keywords(): array { return [ 'aomark', 'listings', 'field', 'dynamic', 'value' ]; }
-	public function get_style_depends(): array { aomark_listings_register_assets(); return [ 'aomark-listings' ]; }
+	public function get_style_depends(): array { return [ 'aomark-listings' ]; }
 
 	protected function register_controls(): void {
-		$this->start_controls_section( 'section_field', [ 'label' => esc_html__( 'Field', 'aomark-listings' ) ] );
+		$this->start_controls_section( 'section_field', [ 'label' => esc_html__( 'Content', 'aomark-listings' ) ] );
 		aomark_listings_add_model_control( $this );
-		$this->add_control( 'field_id', [ 'label' => esc_html__( 'Field', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT2, 'options' => aomark_listings_all_field_options(), 'label_block' => true ] );
-		$this->add_control( 'post_id', [ 'label' => esc_html__( 'Listing ID', 'aomark-listings' ), 'description' => esc_html__( 'Optional. Leave empty to use the current listing.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'min' => 1 ] );
-		$this->add_control( 'html_tag', [ 'label' => esc_html__( 'HTML Tag', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT, 'default' => 'div', 'options' => [ 'div' => 'div', 'span' => 'span', 'p' => 'p', 'h1' => 'h1', 'h2' => 'h2', 'h3' => 'h3', 'h4' => 'h4', 'h5' => 'h5', 'h6' => 'h6' ] ] );
+		$this->add_control( 'field_id', [ 'label' => esc_html__( 'Listing Field', 'aomark-listings' ), 'description' => esc_html__( 'Choose the structured value to display. Fields are grouped by listing type.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT2, 'options' => aomark_listings_all_field_options(), 'label_block' => true ] );
 		$this->add_control( 'fallback', [ 'label' => esc_html__( 'Fallback', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::TEXT, 'dynamic' => [ 'active' => true ] ] );
-		$this->add_control( 'currency', [ 'label' => esc_html__( 'Currency', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => '$' ] );
-		$this->add_control( 'decimals', [ 'label' => esc_html__( 'Decimals', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 0, 'min' => 0, 'max' => 4 ] );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_format', [ 'label' => esc_html__( 'Format', 'aomark-listings' ) ] );
@@ -30,6 +26,13 @@ class Aomark_Listings_Field_Widget extends \Elementor\Widget_Base {
 		$this->add_control( 'suffix', [ 'label' => esc_html__( 'Suffix', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::TEXT, 'dynamic' => [ 'active' => true ] ] );
 		$this->add_control( 'link_to', [ 'label' => esc_html__( 'Link', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT, 'default' => 'none', 'options' => [ 'none' => esc_html__( 'None', 'aomark-listings' ), 'listing' => esc_html__( 'Current Listing', 'aomark-listings' ), 'field' => esc_html__( 'Field URL / Email', 'aomark-listings' ), 'custom' => esc_html__( 'Custom URL', 'aomark-listings' ) ] ] );
 		$this->add_control( 'custom_url', [ 'label' => esc_html__( 'Custom URL', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::URL, 'dynamic' => [ 'active' => true ], 'condition' => [ 'link_to' => 'custom' ] ] );
+		$this->end_controls_section();
+
+		$this->start_controls_section( 'section_advanced', [ 'label' => esc_html__( 'Advanced', 'aomark-listings' ) ] );
+		$this->add_control( 'post_id', [ 'label' => esc_html__( 'Preview a Specific Listing ID', 'aomark-listings' ), 'description' => esc_html__( 'Leave empty to use the current listing automatically. Use this only for an editor preview override.', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'min' => 1 ] );
+		$this->add_control( 'html_tag', [ 'label' => esc_html__( 'HTML Tag', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::SELECT, 'default' => 'div', 'options' => [ 'div' => 'div', 'span' => 'span', 'p' => 'p', 'h1' => 'h1', 'h2' => 'h2', 'h3' => 'h3', 'h4' => 'h4', 'h5' => 'h5', 'h6' => 'h6' ] ] );
+		$this->add_control( 'currency', [ 'label' => esc_html__( 'Price Currency Override', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => '$' ] );
+		$this->add_control( 'decimals', [ 'label' => esc_html__( 'Price Decimals Override', 'aomark-listings' ), 'type' => \Elementor\Controls_Manager::NUMBER, 'default' => 0, 'min' => 0, 'max' => 4 ] );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_style_layout', [ 'label' => esc_html__( 'Layout', 'aomark-listings' ), 'tab' => \Elementor\Controls_Manager::TAB_STYLE ] );
@@ -58,6 +61,9 @@ class Aomark_Listings_Field_Widget extends \Elementor\Widget_Base {
 		if ( $model && $field ) {
 			$settings['model_id'] = $model['id'];
 			$settings['field_id'] = $field['id'];
+		} else {
+			aomark_listings_elementor_editor_notice( esc_html__( 'Choose a listing type and field to preview this widget.', 'aomark-listings' ) );
+			return;
 		}
 		if ( isset( $settings['custom_url']['url'] ) ) {
 			$settings['custom_url'] = $settings['custom_url']['url'];

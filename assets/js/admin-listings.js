@@ -9,10 +9,16 @@
 		var tab = button.attr(tabAttribute);
 		var scope = button.closest('.aomark-listings-model-editor, .aomark-listings-metabox-shell');
 
-		scope.find('[' + tabAttribute + ']').removeClass('is-active');
-		scope.find('[' + panelAttribute + ']').removeClass('is-active');
-		button.addClass('is-active');
-		scope.find('[' + panelAttribute + '="' + tab + '"]').addClass('is-active');
+		scope.find('[' + tabAttribute + ']').removeClass('is-active').attr({
+			'aria-selected': 'false',
+			tabindex: '-1'
+		});
+		scope.find('[' + panelAttribute + ']').removeClass('is-active').prop('hidden', true);
+		button.addClass('is-active').attr({
+			'aria-selected': 'true',
+			tabindex: '0'
+		});
+		scope.find('[' + panelAttribute + '="' + tab + '"]').addClass('is-active').prop('hidden', false);
 	}
 
 	function fieldSlug(value) {
@@ -30,6 +36,19 @@
 			.replace(/^_+|_+$/g, '');
 	}
 
+	function boundedIdentifier(value, maxLength) {
+		value = String(value || '');
+		if (value.length <= maxLength) { return value; }
+		var hash = 2166136261;
+		for (var index = 0; index < value.length; index += 1) {
+			hash ^= value.charCodeAt(index);
+			hash = Math.imul(hash, 16777619);
+		}
+		var suffix = (hash >>> 0).toString(16);
+		while (suffix.length < 8) { suffix = '0' + suffix; }
+		return value.substring(0, maxLength - 9).replace(/_+$/g, '') + '_' + suffix.substring(0, 8);
+	}
+
 	function syncGeneratedInput(input, nextValue) {
 		var currentValue = String(input.val() || '');
 		var previousGeneratedValue = String(input.attr('data-aomark-generated-value') || '');
@@ -44,16 +63,32 @@
 			return;
 		}
 
-		var slug = fieldSlug(row.find('[data-aomark-field-label]').val());
+		var slug = boundedIdentifier(fieldSlug(row.find('[data-aomark-field-label]').val()), 64);
 		var metaKey = slug ? (slug.indexOf('aomark_') === 0 ? slug : 'aomark_' + slug) : '';
 
 		syncGeneratedInput(row.find('[data-aomark-field-id]'), slug);
 		syncGeneratedInput(row.find('[data-aomark-field-key]'), metaKey);
 	}
 
+	function autoGenerateTaxonomyKeys(row) {
+		if (!row.hasClass('aomark-listings-repeater-row--taxonomy')) {
+			return;
+		}
+
+		var slug = boundedIdentifier(fieldSlug(row.find('[data-aomark-taxonomy-singular]').val()), 64);
+		var postType = fieldSlug(row.closest('form').find('input[name="model[post_type]"]').val()) || 'aomark_listing';
+		var taxonomySlug = slug ? boundedIdentifier(postType + '_' + slug, 32) : '';
+
+		syncGeneratedInput(row.find('[data-aomark-taxonomy-id]'), slug);
+		syncGeneratedInput(row.find('[data-aomark-taxonomy-slug]'), taxonomySlug);
+	}
+
+	function formatAdminString(key, fallback, value) {
+		return adminString(key, fallback).replace('%s', value);
+	}
+
 	function syncRowSummary(row) {
 		var label = row.find('input[name*="[label]"], input[name*="[singular]"]').first().val();
-		var name = row.find('input[name*="[key]"], input[name*="[slug]"]').first().val();
 		var type = row.find('select[name*="[type]"] option:selected').text();
 		var typeValue = row.find('select[name*="[type]"]').val();
 		var hierarchical = row.find('input[name*="[hierarchical]"]').is(':checked');
@@ -61,24 +96,30 @@
 		var group = groupSelect.find('option:selected').text();
 		var groupValue = groupSelect.val();
 
-		row.find('.aomark-listings-row-title strong').text(label || (row.hasClass('aomark-listings-repeater-row--taxonomy') ? 'New taxonomy' : 'New field'));
-		row.find('.aomark-listings-row-title code').text(name || 'not saved yet');
+		row.find('.aomark-listings-row-title strong').text(label || (row.hasClass('aomark-listings-repeater-row--taxonomy') ? adminString('newCategory', 'New category group') : adminString('newField', 'New field')));
 
 		if (type) {
 			row.find('.aomark-listings-type-pill').attr('class', 'aomark-listings-type-pill aomark-listings-type-pill--' + typeValue).text(type);
 		} else if (row.hasClass('aomark-listings-repeater-row--taxonomy')) {
-			row.find('.aomark-listings-type-pill').text(hierarchical ? 'Category style' : 'Tag style');
+			row.find('.aomark-listings-type-pill').text(hierarchical ? adminString('categoryStyle', 'Category style') : adminString('tagStyle', 'Tag style'));
+			row.find('.aomark-listings-row-tab').text(row.find('input[name*="[filterable]"]').is(':checked') ? adminString('availableFilter', 'Available as a filter') : adminString('organizationOnly', 'Organization only'));
 		}
 
 		if (row.hasClass('aomark-listings-repeater-row--field')) {
 			var placeholderTypes = ['text', 'textarea', 'number', 'price', 'select', 'location', 'url', 'email', 'date'];
+			var filterableTypes = ['text', 'number', 'price', 'select', 'checkbox', 'url', 'email', 'date'];
+			var filterControl = row.find('[data-aomark-field-filterable]');
+			var filterSupported = filterableTypes.indexOf(typeValue) !== -1;
+			filterControl.prop('disabled', !filterSupported);
+			if (!filterSupported) { filterControl.prop('checked', false); }
+			filterControl.closest('.aomark-listings-check').toggleClass('is-disabled', !filterSupported);
 			if (!groupValue) {
 				var id = String(row.find('input[name*="[id]"]').val() || '').toLowerCase();
 				var featureIds = ['area', 'bedrooms', 'bathrooms', 'rooms', 'parking', 'garages'];
-				var automaticGroup = featureIds.indexOf(id) !== -1 ? 'Features' : (typeValue === 'location' ? 'Location' : (typeValue === 'image' || typeValue === 'gallery' ? 'Media' : 'Details'));
-				group = 'Automatic · ' + automaticGroup;
+				var automaticGroup = featureIds.indexOf(id) !== -1 ? adminString('features', 'Features') : (typeValue === 'location' ? adminString('location', 'Location') : (typeValue === 'image' || typeValue === 'gallery' ? adminString('media', 'Media') : adminString('details', 'Details')));
+				group = formatAdminString('automaticGroup', 'Automatic · %s', automaticGroup);
 			}
-			row.find('.aomark-listings-row-tab').text(group || 'Automatic');
+			row.find('.aomark-listings-row-tab').text(group || adminString('automatic', 'Automatic'));
 			row.find('.aomark-listings-options').toggleClass('is-visible', typeValue === 'select');
 			row.find('.aomark-listings-placeholder').toggleClass('is-visible', placeholderTypes.indexOf(typeValue) !== -1);
 		}
@@ -87,6 +128,11 @@
 	function setRowExpanded(row, expanded) {
 		row.toggleClass('is-collapsed', !expanded);
 		row.find('[data-aomark-toggle-row]').first().attr('aria-expanded', expanded ? 'true' : 'false');
+	}
+
+	function syncEmptyState(type) {
+		var hasRows = $('[data-aomark-rows="' + type + '"] .aomark-listings-repeater-row').length > 0;
+		$('[data-aomark-empty="' + type + '"]').prop('hidden', hasRows);
 	}
 
 	function adminString(key, fallback) {
@@ -106,23 +152,27 @@
 			editor.data('aomark-location-ready', true);
 
 			var address = editor.find('[data-aomark-location-address]');
+			var searchButton = editor.find('[data-aomark-location-search-address]');
 			var latInput = editor.find('[data-aomark-location-lat]');
 			var lngInput = editor.find('[data-aomark-location-lng]');
 			var canvas = editor.find('[data-aomark-location-map]').get(0);
+			var consent = editor.find('[data-aomark-location-consent]');
+			var loadMapButton = editor.find('[data-aomark-location-load-map]');
 			var results = editor.find('[data-aomark-location-results]');
 			var status = editor.find('[data-aomark-location-status]');
 			var settings = window.AomarkListingsAdmin || {};
 			var defaultCenter = Array.isArray(settings.defaultCenter) && settings.defaultCenter.length === 2 ? settings.defaultCenter : [20, 0];
 			var defaultZoom = parseInt(settings.defaultZoom, 10) || 2;
-			var timer = null;
 			var requestController = null;
+			var requestSequence = 0;
 			var map = null;
 			var marker = null;
+			var tileFailureAnnounced = false;
 
 			address.attr('data-aomark-selected-address', address.val() || '');
 
 			function validPoint(lat, lng) {
-				return isFinite(lat) && isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && !(lat === 0 && lng === 0);
+				return isFinite(lat) && isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 			}
 
 			function writePoint(lat, lng) {
@@ -189,6 +239,8 @@
 				if (!settings.ajaxUrl || !settings.geocodeNonce) { return; }
 				if (requestController && requestController.abort) { requestController.abort(); }
 				requestController = window.AbortController ? new window.AbortController() : null;
+				requestSequence += 1;
+				var sequence = requestSequence;
 				status.text(adminString('searching', 'Searching addresses…'));
 
 				var separator = settings.ajaxUrl.indexOf('?') === -1 ? '?' : '&';
@@ -205,47 +257,96 @@
 					if (!response.ok) { throw new Error('Geocoder request failed'); }
 					return response.json();
 				}).then(function(payload){
+					if (sequence !== requestSequence) { return; }
 					if (!payload || !payload.success || !payload.data) { throw new Error('Invalid geocoder response'); }
 					showResults(Array.isArray(payload.data.results) ? payload.data.results : []);
 				}).catch(function(error){
-					if (error && error.name === 'AbortError') { return; }
+					if ((error && error.name === 'AbortError') || sequence !== requestSequence) { return; }
 					closeResults();
 					status.text(adminString('searchError', 'Address search is temporarily unavailable.'));
 				});
 			}
 
-			if (window.L && canvas) {
+			function loadMap() {
+				if (map || !canvas) { return; }
+				if (!window.L) {
+					status.text(adminString('mapUnavailable', 'Map could not be loaded.'));
+					return;
+				}
+
+				canvas.hidden = false;
 				map = window.L.map(canvas, { scrollWheelZoom: false }).setView(defaultCenter, defaultZoom);
-				window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				var tileLayer = window.L.tileLayer(settings.tileUrl || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 					maxZoom: 19,
-					attribution: '&copy; OpenStreetMap contributors'
+					attribution: settings.tileAttribution || '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
 				}).addTo(map);
+				tileLayer.on('tileerror', function(){
+					if (tileFailureAnnounced) { return; }
+					tileFailureAnnounced = true;
+					status.text(adminString('mapTilesUnavailable', 'Map tiles could not be loaded. Coordinates can still be entered directly.'));
+				});
 				map.on('click', function(event){
 					setPoint(event.latlng.lat, event.latlng.lng, false, adminString('pinMoved', 'Pin position updated.'));
 				});
 				canvas._aomarkLocationMap = map;
+				canvas._aomarkLocationTileLayer = tileLayer;
 				var savedLat = parseFloat(latInput.val());
 				var savedLng = parseFloat(lngInput.val());
 				if (validPoint(savedLat, savedLng)) { setPoint(savedLat, savedLng, true); }
+				loadMapButton.attr('aria-expanded', 'true').text(adminString('mapLoadedButton', 'Map loaded'));
+				consent.addClass('is-loaded');
+				status.text(adminString('mapLoaded', 'Map loaded. Drag the pin or click the map to fine-tune it.'));
 				setTimeout(function(){ map.invalidateSize(); }, 100);
-			} else {
-				status.text(adminString('mapUnavailable', 'Map could not be loaded.'));
 			}
+
+			loadMapButton.on('click', loadMap);
+
+			latInput.add(lngInput).on('change', function(){
+				var lat = parseFloat(latInput.val());
+				var lng = parseFloat(lngInput.val());
+				if (!latInput.val() && !lngInput.val()) {
+					clearPoint();
+					status.text(adminString('coordinatesCleared', 'Coordinates cleared.'));
+					return;
+				}
+				if (!validPoint(lat, lng)) {
+					status.text(adminString('coordinatesInvalid', 'Enter a valid latitude from -90 to 90 and longitude from -180 to 180.'));
+					return;
+				}
+				setPoint(lat, lng, true, adminString('coordinatesUpdated', 'Coordinates updated.'));
+			});
 
 			address.on('input', function(){
 				var query = $.trim(address.val());
-				clearTimeout(timer);
+				requestSequence += 1;
+				if (requestController && requestController.abort) { requestController.abort(); }
+				requestController = null;
+				closeResults();
 				if (query !== address.attr('data-aomark-selected-address')) { clearPoint(); }
 				if (query.length < 3) {
 					closeResults();
 					status.text(query ? adminString('typeMore', 'Type at least three characters to search.') : '');
 					return;
 				}
-				timer = setTimeout(function(){ searchAddress(query); }, 650);
+				status.text(adminString('readyToSearch', 'Choose Search address with Photon to request suggestions.'));
+			});
+
+			searchButton.on('click', function(){
+				var query = $.trim(address.val());
+				closeResults();
+				if (query.length < 3) {
+					status.text(adminString('typeMore', 'Type at least three characters to search.'));
+					address.trigger('focus');
+					return;
+				}
+				searchAddress(query);
 			});
 
 			address.on('keydown', function(event){
-				if (event.key === 'ArrowDown' && !results.prop('hidden')) {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					searchButton.trigger('click');
+				} else if (event.key === 'ArrowDown' && !results.prop('hidden')) {
 					event.preventDefault();
 					results.find('button').first().trigger('focus');
 				} else if (event.key === 'Escape') {
@@ -257,13 +358,44 @@
 				var result = $(this);
 				var label = result.attr('data-label') || result.text();
 				address.val(label).attr('data-aomark-selected-address', label);
-				setPoint(result.attr('data-lat'), result.attr('data-lng'), true, adminString('locationSet', 'Location selected.'));
+				setPoint(
+					result.attr('data-lat'),
+					result.attr('data-lng'),
+					true,
+					map ? adminString('locationSet', 'Location selected.') : adminString('locationSaved', 'Location selected. Load the map to fine-tune the pin.')
+				);
 				closeResults();
 				address.trigger('focus');
 			});
 
-			address.on('blur', function(){
-				setTimeout(closeResults, 160);
+			results.on('keydown', '.aomark-listings-location-result', function(event){
+				var current = $(this);
+				var options = results.find('.aomark-listings-location-result');
+				var index = options.index(current);
+
+				if (event.key === 'ArrowDown') {
+					event.preventDefault();
+					options.eq(Math.min(index + 1, options.length - 1)).trigger('focus');
+				} else if (event.key === 'ArrowUp') {
+					event.preventDefault();
+					if (index > 0) {
+						options.eq(index - 1).trigger('focus');
+					} else {
+						address.trigger('focus');
+					}
+				} else if (event.key === 'Escape') {
+					event.preventDefault();
+					closeResults();
+					address.trigger('focus');
+				}
+			});
+
+			editor.on('focusout', function(){
+				setTimeout(function(){
+					if (!editor.find(document.activeElement).length) {
+						closeResults();
+					}
+				}, 0);
 			});
 		});
 	}
@@ -271,6 +403,20 @@
 	$(document).on('click', '[data-aomark-admin-tab]', function(event){
 		event.preventDefault();
 		activateTab($(this), 'data-aomark-admin-tab', 'data-aomark-admin-panel');
+	});
+
+	$(document).on('keydown', '[data-aomark-admin-tab]', function(event){
+		if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].indexOf(event.key) === -1) { return; }
+
+		var tabs = $(this).closest('[role="tablist"]').find('[data-aomark-admin-tab]');
+		var index = tabs.index(this);
+		if (event.key === 'Home') { index = 0; }
+		if (event.key === 'End') { index = tabs.length - 1; }
+		if (event.key === 'ArrowLeft') { index = (index - 1 + tabs.length) % tabs.length; }
+		if (event.key === 'ArrowRight') { index = (index + 1) % tabs.length; }
+
+		event.preventDefault();
+		tabs.eq(index).trigger('click').trigger('focus');
 	});
 
 	$(document).on('click', '[data-aomark-metabox-tab]', function(event){
@@ -281,6 +427,20 @@
 				if (this._aomarkLocationMap) { this._aomarkLocationMap.invalidateSize(); }
 			});
 		}, 80);
+	});
+
+	$(document).on('keydown', '[data-aomark-metabox-tab]', function(event){
+		if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].indexOf(event.key) === -1) { return; }
+
+		var tabs = $(this).closest('[role="tablist"]').find('[data-aomark-metabox-tab]');
+		var index = tabs.index(this);
+		if (event.key === 'Home') { index = 0; }
+		if (event.key === 'End') { index = tabs.length - 1; }
+		if (event.key === 'ArrowLeft') { index = (index - 1 + tabs.length) % tabs.length; }
+		if (event.key === 'ArrowRight') { index = (index + 1) % tabs.length; }
+
+		event.preventDefault();
+		tabs.eq(index).trigger('click').trigger('focus');
 	});
 
 	$(document).on('click', '[data-aomark-toggle-row]', function(event){
@@ -303,6 +463,7 @@
 		var row = $(template.replace(/__i__/g, nextIndex(type)));
 		$('[data-aomark-rows="' + type + '"]').append(row);
 		syncRowSummary(row);
+		syncEmptyState(type);
 		if (type === 'field' || type === 'taxonomy') {
 			row.siblings('.aomark-listings-repeater-row').each(function(){
 				setRowExpanded($(this), false);
@@ -314,7 +475,22 @@
 
 	$(document).on('click', '[data-aomark-remove-row]', function(event){
 		event.preventDefault();
-		$(this).closest('.aomark-listings-repeater-row').remove();
+		var row = $(this).closest('.aomark-listings-repeater-row');
+		var type = row.hasClass('aomark-listings-repeater-row--taxonomy') ? 'taxonomy' : 'field';
+		var placeholder = $('<span class="aomark-listings-row-placeholder" hidden></span>');
+		var notice = $('<div class="aomark-listings-undo-notice" role="status"><span></span><button type="button" class="button"></button></div>');
+
+		row.after(placeholder).detach();
+		notice.find('span').text(type === 'field' ? adminString('fieldRemoved', 'Field removed. The change becomes permanent when you save.') : adminString('categoryRemoved', 'Category group removed. The change becomes permanent when you save.'));
+		notice.find('button').text(adminString('undo', 'Undo')).on('click', function(){
+			placeholder.replaceWith(row);
+			notice.remove();
+			syncEmptyState(type);
+			setRowExpanded(row, true);
+			row.find('[data-aomark-toggle-row]').first().trigger('focus');
+		});
+		$('[data-aomark-rows="' + type + '"]').after(notice);
+		syncEmptyState(type);
 	});
 
 	$(document).on('input change', '.aomark-listings-repeater-row input, .aomark-listings-repeater-row select', function(){
@@ -322,13 +498,33 @@
 		if ($(this).is('[data-aomark-field-label]')) {
 			autoGenerateFieldKeys(row);
 		}
+		if ($(this).is('[data-aomark-taxonomy-singular]')) {
+			autoGenerateTaxonomyKeys(row);
+		}
 		syncRowSummary(row);
+	});
+
+	$(document).on('change', '[data-aomark-preset-form] input[name="preset"]', function(){
+		var form = $(this).closest('[data-aomark-preset-form]');
+		form.find('.aomark-listings-preset-card').removeClass('is-selected');
+		$(this).closest('.aomark-listings-preset-card').addClass('is-selected');
+
+		if (!form.find('[data-aomark-preset-singular]').data('aomark-user-edited')) {
+			form.find('[data-aomark-preset-singular]').val($(this).attr('data-singular') || '');
+		}
+		if (!form.find('[data-aomark-preset-plural]').data('aomark-user-edited')) {
+			form.find('[data-aomark-preset-plural]').val($(this).attr('data-plural') || '');
+		}
+	});
+
+	$(document).on('input', '[data-aomark-preset-singular], [data-aomark-preset-plural]', function(){
+		$(this).data('aomark-user-edited', true);
 	});
 
 	function openImageFrame(callback, multiple) {
 		var frame = wp.media({
-			title: multiple ? 'Choose Gallery' : 'Choose Image',
-			button: { text: multiple ? 'Use Gallery' : 'Use Image' },
+			title: multiple ? adminString('chooseGallery', 'Choose Gallery') : adminString('chooseImage', 'Choose Image'),
+			button: { text: multiple ? adminString('useGallery', 'Use Gallery') : adminString('useImage', 'Use Image') },
 			library: { type: 'image' },
 			multiple: !!multiple
 		});
@@ -347,7 +543,8 @@
 			var data = model.toJSON();
 			wrap.find('input[type="hidden"]').val(data.id || '');
 			var url = data.sizes && data.sizes.thumbnail ? data.sizes.thumbnail.url : data.url;
-			wrap.find('.aomark-listings-media-preview').html(url ? '<img src="' + url + '" alt="">' : '');
+			var preview = wrap.find('.aomark-listings-media-preview').empty();
+			if (url) { $('<img>', { src: url, alt: '' }).appendTo(preview); }
 		}, false);
 	});
 
@@ -356,16 +553,18 @@
 		var wrap = $(this).closest('.aomark-listings-gallery-field');
 		openImageFrame(function(selection){
 			var ids = [];
-			var html = '';
+			var preview = wrap.find('.aomark-listings-gallery-preview').empty();
 			selection.each(function(model){
 				var data = model.toJSON();
 				if (!data.id) { return; }
 				ids.push(data.id);
 				var url = data.sizes && data.sizes.thumbnail ? data.sizes.thumbnail.url : data.url;
-				if (url) { html += '<span data-id="' + data.id + '"><img src="' + url + '" alt=""></span>'; }
+				if (url) {
+					var item = $('<span>').attr('data-id', data.id).appendTo(preview);
+					$('<img>', { src: url, alt: '' }).appendTo(item);
+				}
 			});
 			wrap.find('input[type="hidden"]').val(ids.join(','));
-			wrap.find('.aomark-listings-gallery-preview').html(html);
 		}, true);
 	});
 
@@ -378,5 +577,8 @@
 
 	$(function(){
 		initLocationEditors(document);
+		$('.aomark-listings-repeater-row').each(function(){ syncRowSummary($(this)); });
+		syncEmptyState('field');
+		syncEmptyState('taxonomy');
 	});
 })(jQuery);

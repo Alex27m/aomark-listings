@@ -11,11 +11,50 @@
 	--alm-border-soft: #edf1f5;
 	--alm-surface: #fff;
 	--alm-soft: #f8fafc;
-	--alm-accent: #a855f7;
-	--alm-accent-2: #c026d3;
-	--alm-action: #a855f7;
+	--alm-accent: #7e22ce;
+	--alm-accent-2: #701a75;
+	--alm-action: #7e22ce;
 	color: var(--alm-ink);
 	font-family: inherit;
+}
+
+.aomark-listings-map-notice {
+	margin-top: 12px;
+}
+
+.aomark-listings-filter *,
+.aomark-listings-filter *::before,
+.aomark-listings-filter *::after,
+.aomark-listings-results *,
+.aomark-listings-results *::before,
+.aomark-listings-results *::after,
+.aomark-listings-field *,
+.aomark-listings-meta *,
+.aomark-listings-gallery *,
+.aomark-listings-map-wrap * {
+	box-sizing: border-box;
+}
+
+.aomark-listings-screen-reader-text,
+.aomark-listings-status.screen-reader-text {
+	border: 0;
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	width: 1px;
+	word-wrap: normal !important;
+}
+
+.aomark-listings-editor-notice {
+	background: #fff;
+	border: 1px dashed #9ca3af;
+	border-radius: 6px;
+	color: #4b5563;
+	padding: 18px;
 }
 
 /* Filter */
@@ -58,7 +97,8 @@
 .aomark-listings-results__sort select:focus {
 	border-color: var(--alm-accent);
 	box-shadow: 0 0 0 2px color-mix(in srgb, var(--alm-accent) 22%, transparent);
-	outline: none;
+	outline: 2px solid #4c1d95;
+	outline-offset: 2px;
 }
 
 .aomark-listings-filter__field--button,
@@ -168,6 +208,13 @@
 	opacity: 0.55;
 	pointer-events: none;
 	transition: opacity 0.2s ease;
+}
+
+[data-aomark-listings-results-inner]:focus,
+.aomark-listings-card:focus {
+	box-shadow: 0 0 0 2px #fff;
+	outline: 3px solid #4c1d95;
+	outline-offset: 4px;
 }
 
 .aomark-listings-results.is-loading::after {
@@ -317,28 +364,77 @@
 	margin-top: 26px;
 }
 
-.aomark-listings-pagination button {
+.aomark-listings-pagination button,
+.aomark-listings-pagination a,
+.aomark-listings-pagination span {
+	align-items: center;
 	background: #fff;
 	border: 1px solid var(--alm-border);
 	border-radius: 4px;
 	color: var(--alm-ink);
 	cursor: pointer;
+	display: inline-flex;
 	font: inherit;
+	justify-content: center;
 	min-height: 38px;
 	min-width: 38px;
 	padding: 0 12px;
+	text-decoration: none;
 }
 
-.aomark-listings-pagination button.is-active,
-.aomark-listings-pagination button:not(:disabled):hover {
+.aomark-listings-pagination .is-active,
+.aomark-listings-pagination [aria-current="page"],
+.aomark-listings-pagination button:not(:disabled):hover,
+.aomark-listings-pagination a:hover {
 	background: var(--alm-action);
 	border-color: var(--alm-action);
 	color: #fff;
 }
 
-.aomark-listings-pagination button:disabled {
+.aomark-listings-pagination button:disabled,
+.aomark-listings-pagination .is-disabled {
 	cursor: default;
 	opacity: 0.65;
+}
+
+.aomark-listings-pagination a:focus-visible,
+.aomark-listings-pagination button:focus-visible,
+.aomark-listings-button:focus-visible,
+.aomark-listings-reset:focus-visible,
+.aomark-listings-load-more:focus-visible,
+.aomark-listings-card__button:focus-visible {
+	box-shadow: 0 0 0 2px #fff;
+	outline: 3px solid #4c1d95;
+	outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+	.aomark-listings-filter__field input,
+	.aomark-listings-filter__field select,
+	.aomark-listings-results__sort select,
+	.aomark-listings-button,
+	.aomark-listings-reset,
+	.aomark-listings-load-more,
+	.aomark-listings-card__button,
+	.aomark-listings-pagination a,
+	.aomark-listings-pagination button {
+		border: 1px solid ButtonText;
+		forced-color-adjust: auto;
+	}
+
+	.aomark-listings-filter__field input:focus,
+	.aomark-listings-filter__field select:focus,
+	.aomark-listings-results__sort select:focus,
+	.aomark-listings-pagination a:focus-visible,
+	.aomark-listings-pagination button:focus-visible,
+	.aomark-listings-button:focus-visible,
+	.aomark-listings-reset:focus-visible,
+	.aomark-listings-load-more:focus-visible,
+	.aomark-listings-card__button:focus-visible {
+		box-shadow: none;
+		outline: 3px solid Highlight;
+		outline-offset: 3px;
+	}
 }
 
 .aomark-listings-empty {
@@ -375,7 +471,14 @@ span.aomark-listings-field {
 
 .aomark-listings-field__value a {
 	color: inherit;
-	text-decoration: none;
+	text-decoration: underline;
+	text-decoration-thickness: 0.08em;
+	text-underline-offset: 0.16em;
+}
+
+.aomark-listings-field__value a:hover,
+.aomark-listings-field__value a:focus-visible {
+	color: var(--alm-accent);
 }
 
 .aomark-listings-field__prefix {
@@ -405,10 +508,15 @@ span.aomark-listings-field {
 
 .aomark-listings-meta__label {
 	color: var(--alm-muted);
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 .aomark-listings-meta__value {
 	color: var(--alm-ink);
+	min-width: 0;
+	overflow-wrap: anywhere;
+	text-align: end;
 }
 
 /* Gallery */
@@ -424,6 +532,12 @@ span.aomark-listings-field {
 	border-radius: 4px;
 	display: block;
 	overflow: hidden;
+}
+
+.aomark-listings-gallery__item:focus-visible {
+	box-shadow: 0 0 0 2px #fff;
+	outline: 3px solid #4c1d95;
+	outline-offset: 3px;
 }
 
 .aomark-listings-gallery__item img {
@@ -442,6 +556,24 @@ span.aomark-listings-field {
 	height: var(--alm-map-height, 480px);
 	min-height: 220px;
 	width: 100%;
+}
+
+.aomark-listings-map-wrap {
+	position: relative;
+}
+
+.aomark-listings-map-status {
+	background: rgba(255, 255, 255, 0.94);
+	border: 1px solid var(--alm-border);
+	border-radius: 4px;
+	color: var(--alm-muted);
+	left: 50%;
+	max-width: calc(100% - 32px);
+	padding: 10px 14px;
+	position: absolute;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 500;
 }
 
 .aomark-listings-popup {
@@ -531,5 +663,15 @@ span.aomark-listings-field {
 	.aomark-listings-load-more,
 	.aomark-listings-gallery__item img {
 		transition-duration: 0.01ms;
+	}
+
+	.aomark-listings-results.is-loading::after {
+		animation: none;
+	}
+
+	.aomark-listings-card:hover,
+	.aomark-listings-card:hover .aomark-listings-card__image img,
+	.aomark-listings-gallery__item:hover img {
+		transform: none;
 	}
 }
