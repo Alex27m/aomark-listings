@@ -18,6 +18,7 @@ export const ROOT_DIRECTORY = path.resolve(path.dirname(SCRIPT_PATH), '..');
 export const PLUGIN_SLUG = 'aomark-listings';
 export const PACKAGE_FILES = Object.freeze([
 	'LICENSE',
+	'aomark-listings.php',
 	'aomark-real-estate.php',
 	'assets/css/admin-listings.css',
 	'assets/css/admin-menu.css',
@@ -377,7 +378,7 @@ export async function buildPlugin() {
 	}
 
 	const [pluginSource, readmeSource] = await Promise.all([
-		readFile(path.join(ROOT_DIRECTORY, 'aomark-real-estate.php'), 'utf8'),
+		readFile(path.join(ROOT_DIRECTORY, 'aomark-listings.php'), 'utf8'),
 		readFile(path.join(ROOT_DIRECTORY, 'readme.txt'), 'utf8'),
 	]);
 	const version = readVersion(pluginSource, readmeSource);

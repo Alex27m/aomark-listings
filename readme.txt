@@ -4,7 +4,7 @@ Tags: listings, elementor, directory, real estate, maps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.1
+Stable tag: 3.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,9 +78,9 @@ Location features optionally contact the following services:
 
 = Photon address search =
 
-The default geocoder is the public Photon service operated by Komoot (`https://photon.komoot.io/api/`). It is contacted only after an authenticated editor enters at least three address characters in a listing location editor.
+The default geocoder is the public Photon service operated by Komoot (`https://photon.komoot.io/api/`). It is contacted only after an authenticated editor enters at least three address characters and explicitly chooses Search address with Photon. The editor displays this disclosure before the request is sent.
 
-The site's server sends the address query, an optional two-letter country restriction, the site URL and plugin version in the User-Agent, and normal server request metadata such as its IP address. The plugin requests at most five results, limits uncached searches per editor, and caches successful results in WordPress for 12 hours. The endpoint can be replaced or self-hosted with the `aomark_listings_geocoder_endpoint` filter.
+The site's server sends the address query, an optional two-letter country restriction, the plugin version and public project URL in the User-Agent, and normal server request metadata such as its IP address. It does not include the individual site's URL. The plugin requests at most five results, limits uncached searches per editor, and caches successful results in WordPress for 12 hours. The endpoint can be replaced or self-hosted with the `aomark_listings_geocoder_endpoint` filter.
 
 Service terms of use: [Photon service homepage](https://photon.komoot.io/). Additional information: [Photon source and license](https://github.com/komoot/photon) and [Komoot privacy policy](https://www.komoot.com/privacy).
 
@@ -95,6 +95,12 @@ Developers can replace the HTTPS tile template and attribution with the `aomark_
 Aomark Listings adds suggested text to WordPress' Privacy Policy Guide so the site owner can describe the actual setup to visitors. The plugin itself sends no analytics or telemetry to Aomark.
 
 == Changelog ==
+
+= 3.5.2 =
+* Aligned the canonical main plugin filename with the WordPress.org slug while retaining a migration bootstrap for existing installations.
+* Made Photon address lookup an explicit editor action with an inline privacy disclosure and removed the individual site URL from its User-Agent.
+* Namespaced editor tabs for Suite coexistence and improved labels, keyboard tab behavior, focus contrast, forced-colors support, coordinate entry, and map failure notices.
+* Expanded disposable release gates for legacy upgrades, public-content visibility, descriptor tampering, and bounded abuse inputs.
 
 = 3.5.1 =
 * Kept existing public slugs intact while making filter, reset, sort, and pagination URLs safe on pretty and plain archive, taxonomy, and page routes.

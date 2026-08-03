@@ -58,11 +58,11 @@
     },
     {
       "step": "activatePlugin",
-      "pluginPath": "/wordpress/wp-content/plugins/aomark-listings/aomark-real-estate.php"
+      "pluginPath": "/wordpress/wp-content/plugins/aomark-listings/aomark-listings.php"
     },
     {
       "step": "runPHP",
-      "code": "<?php define( 'AOMARK_LISTINGS_QA_EXPECT_ELEMENTOR', true ); define( 'AOMARK_LISTINGS_QA_EXPECT_WOOCOMMERCE', true ); require_once '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/aomark-listings/tests/qa/fixture.php';"
+      "code": "<?php define( 'AOMARK_LISTINGS_QA_EXPECT_ELEMENTOR', true ); define( 'AOMARK_LISTINGS_QA_EXPECT_WOOCOMMERCE', true ); require_once '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/aomark-listings/tests/qa/fixture.php'; wp_mkdir_p( WPMU_PLUGIN_DIR ); if ( ! copy( '/wordpress/wp-content/plugins/aomark-listings/tests/qa/browser-runtime.php', WPMU_PLUGIN_DIR . '/aomark-listings-browser-qa.php' ) ) { throw new RuntimeException( 'Browser QA mu-plugin could not be installed.' ); }"
     }
   ]
 }

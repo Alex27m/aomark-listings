@@ -551,10 +551,15 @@ function aomark_listings_admin_enqueue( $hook ) {
 					'mapUnavailable' => __( 'Map could not be loaded. Check the internet connection and reload the editor.', 'aomark-listings' ),
 					'mapLoaded'      => __( 'Map loaded. Drag the pin or click the map to fine-tune it.', 'aomark-listings' ),
 					'mapLoadedButton' => __( 'Map loaded', 'aomark-listings' ),
+					'mapTilesUnavailable' => __( 'Map tiles could not be loaded. Coordinates can still be entered directly.', 'aomark-listings' ),
 					'typeMore'       => __( 'Type at least three characters to search.', 'aomark-listings' ),
+					'readyToSearch'  => __( 'Choose Search address with Photon to request suggestions.', 'aomark-listings' ),
 					'locationSet'    => __( 'Location selected. Drag the pin or click the map to fine-tune it.', 'aomark-listings' ),
 					'locationSaved'  => __( 'Location selected. Load the map to fine-tune the pin.', 'aomark-listings' ),
 					'pinMoved'       => __( 'Pin position updated.', 'aomark-listings' ),
+					'coordinatesUpdated' => __( 'Coordinates updated.', 'aomark-listings' ),
+					'coordinatesCleared' => __( 'Coordinates cleared.', 'aomark-listings' ),
+					'coordinatesInvalid' => __( 'Enter a valid latitude from -90 to 90 and longitude from -180 to 180.', 'aomark-listings' ),
 					'newField'          => __( 'New field', 'aomark-listings' ),
 					'newCategory'       => __( 'New category group', 'aomark-listings' ),
 					'notSaved'          => __( 'not saved yet', 'aomark-listings' ),
@@ -664,7 +669,7 @@ function aomark_listings_ajax_geocode() {
 			'timeout'             => 8,
 			'redirection'         => 2,
 			'limit_response_size' => 1024 * 1024,
-			'user-agent'          => 'Aomark Listings/' . AOMARK_LISTINGS_VERSION . '; ' . home_url( '/' ),
+			'user-agent'          => 'Aomark Listings/' . AOMARK_LISTINGS_VERSION . ' (+https://github.com/Alex27m/aomark-listings)',
 		]
 	);
 
@@ -1032,11 +1037,11 @@ function aomark_listings_render_model_form( $model ) {
 				</div>
 			</div>
 
-			<nav class="aomark-listings-tabs aomark-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Listing type editor sections', 'aomark-listings' ); ?>">
-				<button id="aomark-tab-basics" type="button" role="tab" aria-selected="true" aria-controls="aomark-panel-basics" class="aomark-tab is-active" data-aomark-admin-tab="basics"><?php esc_html_e( 'Basics', 'aomark-listings' ); ?></button>
-				<button id="aomark-tab-taxonomies" type="button" role="tab" aria-selected="false" aria-controls="aomark-panel-taxonomies" tabindex="-1" class="aomark-tab" data-aomark-admin-tab="taxonomies"><?php esc_html_e( 'Categories & Filters', 'aomark-listings' ); ?></button>
-				<button id="aomark-tab-fields" type="button" role="tab" aria-selected="false" aria-controls="aomark-panel-fields" tabindex="-1" class="aomark-tab" data-aomark-admin-tab="fields"><?php esc_html_e( 'Listing Fields', 'aomark-listings' ); ?></button>
-				<button id="aomark-tab-advanced" type="button" role="tab" aria-selected="false" aria-controls="aomark-panel-advanced" tabindex="-1" class="aomark-tab" data-aomark-admin-tab="advanced"><?php esc_html_e( 'Advanced', 'aomark-listings' ); ?></button>
+			<nav class="aomark-listings-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Listing type editor sections', 'aomark-listings' ); ?>">
+				<button id="aomark-tab-basics" type="button" role="tab" aria-selected="true" aria-controls="aomark-panel-basics" class="aomark-listings-tab is-active" data-aomark-admin-tab="basics"><?php esc_html_e( 'Basics', 'aomark-listings' ); ?></button>
+				<button id="aomark-tab-taxonomies" type="button" role="tab" aria-selected="false" aria-controls="aomark-panel-taxonomies" tabindex="-1" class="aomark-listings-tab" data-aomark-admin-tab="taxonomies"><?php esc_html_e( 'Categories & Filters', 'aomark-listings' ); ?></button>
+				<button id="aomark-tab-fields" type="button" role="tab" aria-selected="false" aria-controls="aomark-panel-fields" tabindex="-1" class="aomark-listings-tab" data-aomark-admin-tab="fields"><?php esc_html_e( 'Listing Fields', 'aomark-listings' ); ?></button>
+				<button id="aomark-tab-advanced" type="button" role="tab" aria-selected="false" aria-controls="aomark-panel-advanced" tabindex="-1" class="aomark-listings-tab" data-aomark-admin-tab="advanced"><?php esc_html_e( 'Advanced', 'aomark-listings' ); ?></button>
 			</nav>
 
 			<section id="aomark-panel-basics" class="aomark-listings-tab-panel is-active" role="tabpanel" aria-labelledby="aomark-tab-basics" data-aomark-admin-panel="basics">
@@ -1065,7 +1070,7 @@ function aomark_listings_render_model_form( $model ) {
 				</div>
 			</section>
 
-			<section id="aomark-panel-taxonomies" class="aomark-listings-tab-panel" role="tabpanel" aria-labelledby="aomark-tab-taxonomies" data-aomark-admin-panel="taxonomies">
+			<section id="aomark-panel-taxonomies" class="aomark-listings-tab-panel" role="tabpanel" aria-labelledby="aomark-tab-taxonomies" data-aomark-admin-panel="taxonomies" hidden>
 				<div class="aomark-listings-panel-head">
 					<div>
 						<h3><?php esc_html_e( 'Categories & Filters', 'aomark-listings' ); ?></h3>
@@ -1086,7 +1091,7 @@ function aomark_listings_render_model_form( $model ) {
 				</div>
 			</section>
 
-			<section id="aomark-panel-fields" class="aomark-listings-tab-panel" role="tabpanel" aria-labelledby="aomark-tab-fields" data-aomark-admin-panel="fields">
+			<section id="aomark-panel-fields" class="aomark-listings-tab-panel" role="tabpanel" aria-labelledby="aomark-tab-fields" data-aomark-admin-panel="fields" hidden>
 				<div class="aomark-listings-panel-head">
 					<div>
 						<h3><?php esc_html_e( 'Listing Fields', 'aomark-listings' ); ?></h3>
@@ -1113,7 +1118,7 @@ function aomark_listings_render_model_form( $model ) {
 				</div>
 			</section>
 
-			<section id="aomark-panel-advanced" class="aomark-listings-tab-panel" role="tabpanel" aria-labelledby="aomark-tab-advanced" data-aomark-admin-panel="advanced">
+			<section id="aomark-panel-advanced" class="aomark-listings-tab-panel" role="tabpanel" aria-labelledby="aomark-tab-advanced" data-aomark-admin-panel="advanced" hidden>
 				<div class="aomark-listings-section-intro">
 					<div>
 						<h3><?php esc_html_e( 'Advanced WordPress settings', 'aomark-listings' ); ?></h3>

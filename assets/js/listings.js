@@ -466,6 +466,8 @@
 				announce(widget, text);
 				if (options.append === true) {
 					focusElement(responseMeta.firstAdded || inner);
+				} else if (options.focusSort === true) {
+					focusElement(qs(widget, '[data-aomark-listings-sort]'));
 				} else if (options.focusResults === true) {
 					focusElement(inner);
 				}
@@ -631,7 +633,7 @@
 		state.widget = widget;
 		state.sort = event.target.value || '';
 		updateUrl(state.filters, window.location.href, state, 1, false);
-		loadWidget(widget, { page: 1, sort: state.sort, focusResults: true });
+		loadWidget(widget, { page: 1, sort: state.sort, focusSort: true });
 	});
 
 	window.addEventListener('popstate', function(event){
@@ -724,6 +726,8 @@
 	}
 
 	function showMapEmpty(component, element) {
+		if (element) { element._aomarkTileFailureActive = false; }
+		clearMapFailure(component);
 		if (element) {
 			element.hidden = true;
 			element.setAttribute('aria-hidden', 'true');
@@ -737,6 +741,38 @@
 		if (empty) { empty.hidden = true; }
 		element.hidden = false;
 		element.removeAttribute('aria-hidden');
+	}
+
+	function mapFailureNode(component) {
+		if (!component) { return null; }
+		var failure = qs(component, '[data-aomark-map-failure]');
+		if (!failure) {
+			failure = document.createElement('div');
+			failure.className = 'aomark-listings-empty aomark-listings-map-notice';
+			failure.setAttribute('data-aomark-map-failure', '');
+			failure.setAttribute('role', 'status');
+			failure.setAttribute('aria-live', 'polite');
+			failure.hidden = true;
+			component.appendChild(failure);
+		}
+		return failure;
+	}
+
+	function showMapFailure(component, element, text, hideCanvas) {
+		if (hideCanvas && element) {
+			element.hidden = true;
+			element.setAttribute('aria-hidden', 'true');
+		}
+		var failure = mapFailureNode(component);
+		if (!failure) { return; }
+		if (!failure.hidden && failure.textContent === text) { return; }
+		failure.textContent = text;
+		failure.hidden = false;
+	}
+
+	function clearMapFailure(component) {
+		var failure = component ? qs(component, '[data-aomark-map-failure]') : null;
+		if (failure) { failure.hidden = true; }
 	}
 
 	function ensureMapElement(component) {
@@ -757,10 +793,15 @@
 	window.AomarkListings.renderMap = function(element, forcedItems) {
 		if (!element) { return; }
 		if (Array.isArray(forcedItems)) { element._aomarkItems = forcedItems; }
-		if (!window.L) { return; }
+		var component = mapOwner(element);
+		if (!window.L) {
+			showMapFailure(component, element, message('mapUnavailable', 'The interactive map is unavailable. Listing results remain accessible.'), true);
+			dispatch('aomark:listings:map-error', element, { reason: 'library' });
+			return;
+		}
+		if (!element._aomarkTileLayer) { clearMapFailure(component); }
 		var config = mapConfig(element);
 		var items = Array.isArray(forcedItems) ? forcedItems : (Array.isArray(element._aomarkItems) ? element._aomarkItems : (Array.isArray(config.items) ? config.items : []));
-		var component = mapOwner(element);
 		element._aomarkItems = items;
 
 		element.setAttribute('role', 'region');
@@ -783,10 +824,17 @@
 				zoomControl: config.zoomControl !== false,
 				dragging: config.dragging !== false
 			});
-			window.L.tileLayer(settings().tileUrl || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			var tileLayer = window.L.tileLayer(settings().tileUrl || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				maxZoom: 19,
 				attribution: settings().tileAttribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 			}).addTo(element._aomarkMap);
+			tileLayer.on('tileerror', function(){
+				if (element._aomarkTileFailureActive) { return; }
+				element._aomarkTileFailureActive = true;
+				showMapFailure(component, element, message('mapTilesUnavailable', 'Map tiles could not be loaded. Listing markers and result links remain available.'), false);
+				dispatch('aomark:listings:map-error', element, { reason: 'tiles' });
+			});
+			element._aomarkTileLayer = tileLayer;
 			element._aomarkMarkers = [];
 		}
 

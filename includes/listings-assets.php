@@ -130,6 +130,8 @@ function aomark_listings_register_assets() {
 				'resultsAdded'   => __( 'Listings added: %1$d. Total: %2$d.', 'aomark-listings' ),
 				'mapEmpty'       => __( 'No listing locations match the current filters.', 'aomark-listings' ),
 				'mapLabel'       => __( 'Listing locations', 'aomark-listings' ),
+				'mapUnavailable' => __( 'The interactive map is unavailable. Listing results remain accessible.', 'aomark-listings' ),
+				'mapTilesUnavailable' => __( 'Map tiles could not be loaded. Listing markers and result links remain available.', 'aomark-listings' ),
 			],
 		]
 	);

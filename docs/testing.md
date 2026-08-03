@@ -65,3 +65,32 @@ The following checks require a real WordPress/Elementor browser environment and 
 - Verify keyboard navigation, focus, announcements, responsive layouts, browser Back/Forward, and blocked external services.
 - Inspect the release ZIP: local Leaflet CSS, JavaScript, images, and license must be present; development-only files and remote executable assets must be absent.
 - Run WPCS/PHPCS when the project adopts a pinned ruleset; the current workflow uses Plugin Check and does not represent PHPCS as an automated gate.
+
+## 3.5.2 release evidence (2026-08-03)
+
+Completed in disposable local WordPress environments, never on the live QA
+site:
+
+- latest WordPress/PHP 8.3 clean install and dependency-degraded source runs;
+- WordPress 6.0/PHP 7.4 core-only and Elementor 3.5 compatibility runs;
+- 63 advanced assertions with 300 public records, protected-record leakage
+  checks, roles/nonces, descriptor tampering, request bounds, five pages of 60,
+  and the 200-marker cap;
+- exact 3.5.1 to exact 3.5.2 single-site and multisite plugin-basename upgrades,
+  including pre/post SHA-256 comparison of the real models option;
+- exact-ZIP filter, sort, pagination, Back/Forward, 320 px no-overflow, admin tab
+  keyboard behavior, field labels, media group names, and Suite selector
+  coexistence;
+- Axe Core 4.12.1 over desktop/mobile frontend and all four listing/model admin
+  tabs: zero label, ARIA, color-contrast, serious, or critical findings outside
+  overlapping Leaflet map markers. The marker target-size finding is retained as
+  a documented WCAG 2.5.8 geographic-placement exception; marker Enter opens the
+  matching popup link, and listing links remain available outside the map;
+- current official Plugin Check with General, Plugin Repo, Security,
+  Performance, Accessibility, Error, and Warning enabled: `Checks complete. No
+  errors found.`
+
+Not claimed by this evidence: NVDA/VoiceOver testing, a 5,000-record MySQL load
+run, Core Web Vitals under production traffic, Elementor Pro, or every block
+theme. Those remain follow-up compatibility/performance work and are not hidden
+behind the 300-record bounded fixture.

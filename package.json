@@ -9,6 +9,7 @@
   },
   "files": [
     "LICENSE",
+    "aomark-listings.php",
     "aomark-real-estate.php",
     "assets/css/admin-listings.css",
     "assets/css/admin-menu.css",

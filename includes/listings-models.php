@@ -935,15 +935,21 @@ function aomark_listings_deactivate() {
 	flush_rewrite_rules( false );
 }
 
+function aomark_listings_admin_field_control_id( $post_id, $field ) {
+	return 'aomark-listings-field-' . absint( $post_id ) . '-' . sanitize_html_class( aomark_listings_meta_key( $field ) );
+}
+
 function aomark_listings_render_admin_field_input( $post_id, $field ) {
 	$key         = aomark_listings_meta_key( $field );
 	$type        = $field['type'];
 	$placeholder = (string) ( $field['placeholder'] ?? '' );
 	$value       = get_post_meta( $post_id, $key, true );
+	$control_id  = aomark_listings_admin_field_control_id( $post_id, $field );
 
 	if ( 'textarea' === $type ) {
 		printf(
-			'<textarea class="widefat" rows="4" name="aomark_listing_meta[%1$s]" placeholder="%2$s">%3$s</textarea>',
+			'<textarea id="%1$s" class="widefat" rows="4" name="aomark_listing_meta[%2$s]" placeholder="%3$s">%4$s</textarea>',
+			esc_attr( $control_id ),
 			esc_attr( $key ),
 			esc_attr( $placeholder ),
 			esc_textarea( (string) $value )
@@ -952,7 +958,7 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 	}
 
 	if ( 'select' === $type ) {
-		printf( '<select class="widefat" name="aomark_listing_meta[%s]">', esc_attr( $key ) );
+		printf( '<select id="%1$s" class="widefat" name="aomark_listing_meta[%2$s]">', esc_attr( $control_id ), esc_attr( $key ) );
 		printf( '<option value="">%s</option>', esc_html( $placeholder ) );
 		foreach ( (array) $field['options'] as $option ) {
 			printf(
@@ -968,7 +974,8 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 
 	if ( 'checkbox' === $type ) {
 		printf(
-			'<label><input type="checkbox" name="aomark_listing_meta[%1$s]" value="1"%2$s> %3$s</label>',
+			'<label><input id="%1$s" type="checkbox" name="aomark_listing_meta[%2$s]" value="1"%3$s> %4$s</label>',
+			esc_attr( $control_id ),
 			esc_attr( $key ),
 			checked( aomark_listings_bool( $value ), true, false ),
 			esc_html__( 'Enabled', 'aomark-listings' )
@@ -980,11 +987,14 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 		$image_id = absint( $value );
 		$preview  = $image_id ? wp_get_attachment_image( $image_id, 'thumbnail' ) : '';
 		printf(
-			'<div class="aomark-listings-media-field"><div class="aomark-listings-media-preview">%1$s</div><input type="hidden" name="aomark_listing_meta[%2$s]" value="%3$s"><button type="button" class="button aomark-listings-select-image">%4$s</button> <button type="button" class="button-link aomark-listings-clear-media">%5$s</button></div>',
+			'<div class="aomark-listings-media-field"><div class="aomark-listings-media-preview">%1$s</div><input id="%2$s" type="hidden" name="aomark_listing_meta[%3$s]" value="%4$s"><button type="button" class="button aomark-listings-select-image" aria-label="%5$s">%6$s</button> <button type="button" class="button-link aomark-listings-clear-media" aria-label="%7$s">%8$s</button></div>',
 			$preview, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			esc_attr( $control_id ),
 			esc_attr( $key ),
 			esc_attr( $image_id ),
+			esc_attr( sprintf( /* translators: %s: field label. */ __( 'Choose image for %s', 'aomark-listings' ), $field['label'] ) ),
 			esc_html__( 'Choose Image', 'aomark-listings' ),
+			esc_attr( sprintf( /* translators: %s: field label. */ __( 'Clear image for %s', 'aomark-listings' ), $field['label'] ) ),
 			esc_html__( 'Clear', 'aomark-listings' )
 		);
 		return;
@@ -994,7 +1004,7 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 		$ids = is_array( $value ) ? array_map( 'absint', $value ) : array_filter( array_map( 'absint', explode( ',', (string) $value ) ) );
 		$ids = array_slice( array_values( array_filter( $ids ) ), 0, 100 );
 		echo '<div class="aomark-listings-gallery-field">';
-		printf( '<input type="hidden" name="aomark_listing_meta[%s]" value="%s">', esc_attr( $key ), esc_attr( implode( ',', $ids ) ) );
+		printf( '<input id="%1$s" type="hidden" name="aomark_listing_meta[%2$s]" value="%3$s">', esc_attr( $control_id ), esc_attr( $key ), esc_attr( implode( ',', $ids ) ) );
 		echo '<div class="aomark-listings-gallery-preview">';
 		foreach ( $ids as $image_id ) {
 			$image = wp_get_attachment_image( $image_id, 'thumbnail' );
@@ -1003,8 +1013,16 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 			}
 		}
 		echo '</div>';
-		printf( '<button type="button" class="button aomark-listings-select-gallery">%s</button> ', esc_html__( 'Choose Gallery', 'aomark-listings' ) );
-		printf( '<button type="button" class="button-link aomark-listings-clear-media">%s</button>', esc_html__( 'Clear', 'aomark-listings' ) );
+		printf(
+			'<button type="button" class="button aomark-listings-select-gallery" aria-label="%1$s">%2$s</button> ',
+			esc_attr( sprintf( /* translators: %s: field label. */ __( 'Choose images for %s', 'aomark-listings' ), $field['label'] ) ),
+			esc_html__( 'Choose Gallery', 'aomark-listings' )
+		);
+		printf(
+			'<button type="button" class="button-link aomark-listings-clear-media" aria-label="%1$s">%2$s</button>',
+			esc_attr( sprintf( /* translators: %s: field label. */ __( 'Clear images from %s', 'aomark-listings' ), $field['label'] ) ),
+			esc_html__( 'Clear', 'aomark-listings' )
+		);
 		echo '</div>';
 		return;
 	}
@@ -1014,20 +1032,54 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 		$lat        = get_post_meta( $post_id, $key . '_lat', true );
 		$lng        = get_post_meta( $post_id, $key . '_lng', true );
 		$results_id = 'aomark-location-results-' . $post_id . '-' . sanitize_html_class( $key );
+		$notice_id  = 'aomark-location-search-notice-' . $post_id . '-' . sanitize_html_class( $key );
+		$status_id  = 'aomark-location-status-' . $post_id . '-' . sanitize_html_class( $key );
 		$map_id     = 'aomark-location-map-' . $post_id . '-' . sanitize_html_class( $key );
 		echo '<div class="aomark-listings-location-editor" data-aomark-location-editor>';
 		echo '<div class="aomark-listings-location-search">';
+		echo '<div class="aomark-listings-location-search-controls">';
 		printf(
-			'<input class="widefat" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="%1$s" data-aomark-location-address name="aomark_listing_meta[%2$s_address]" value="%3$s" placeholder="%4$s">',
+			'<input id="%1$s" class="widefat" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="%2$s" aria-describedby="%3$s" data-aomark-location-address name="aomark_listing_meta[%4$s_address]" value="%5$s" placeholder="%6$s">',
+			esc_attr( $control_id ),
 			esc_attr( $results_id ),
+			esc_attr( $notice_id ),
 			esc_attr( $key ),
 			esc_attr( $address ),
-			esc_attr( $placeholder ?: __( 'Start typing an address…', 'aomark-listings' ) )
+			esc_attr( $placeholder ?: __( 'Enter an address', 'aomark-listings' ) )
 		);
-		printf( '<div class="aomark-listings-location-results" id="%s" data-aomark-location-results role="listbox" hidden></div>', esc_attr( $results_id ) );
+		printf(
+			'<button type="button" class="button" data-aomark-location-search-address aria-controls="%1$s" aria-describedby="%2$s">%3$s</button>',
+			esc_attr( $results_id ),
+			esc_attr( $notice_id ),
+			esc_html__( 'Search address with Photon', 'aomark-listings' )
+		);
 		echo '</div>';
-		printf( '<input type="hidden" data-aomark-location-lat name="aomark_listing_meta[%1$s_lat]" value="%2$s">', esc_attr( $key ), esc_attr( $lat ) );
-		printf( '<input type="hidden" data-aomark-location-lng name="aomark_listing_meta[%1$s_lng]" value="%2$s">', esc_attr( $key ), esc_attr( $lng ) );
+		printf(
+			'<p id="%1$s" class="aomark-listings-location-service-notice">%2$s</p>',
+			esc_attr( $notice_id ),
+			wp_kses_post( __( 'Choosing Search address with Photon sends the entered address and normal request metadata to the Photon service operated by Komoot. Review the <a href="https://www.komoot.com/privacy" target="_blank" rel="noopener noreferrer">Komoot privacy policy</a> before using the search.', 'aomark-listings' ) )
+		);
+		printf( '<div class="aomark-listings-location-results" id="%s" data-aomark-location-results role="listbox" aria-label="%s" hidden></div>', esc_attr( $results_id ), esc_attr__( 'Address suggestions', 'aomark-listings' ) );
+		echo '</div>';
+		echo '<fieldset class="aomark-listings-location-coordinates">';
+		echo '<legend>' . esc_html__( 'Coordinates', 'aomark-listings' ) . '</legend>';
+		printf(
+			'<label for="%1$s-lat">%2$s</label><input id="%1$s-lat" class="widefat" type="number" step="any" min="-90" max="90" inputmode="decimal" data-aomark-location-lat aria-describedby="%3$s" name="aomark_listing_meta[%4$s_lat]" value="%5$s">',
+			esc_attr( $control_id ),
+			esc_html__( 'Latitude', 'aomark-listings' ),
+			esc_attr( $status_id ),
+			esc_attr( $key ),
+			esc_attr( $lat )
+		);
+		printf(
+			'<label for="%1$s-lng">%2$s</label><input id="%1$s-lng" class="widefat" type="number" step="any" min="-180" max="180" inputmode="decimal" data-aomark-location-lng aria-describedby="%3$s" name="aomark_listing_meta[%4$s_lng]" value="%5$s">',
+			esc_attr( $control_id ),
+			esc_html__( 'Longitude', 'aomark-listings' ),
+			esc_attr( $status_id ),
+			esc_attr( $key ),
+			esc_attr( $lng )
+		);
+		echo '</fieldset>';
 		echo '<div class="aomark-listings-location-consent" data-aomark-location-consent>';
 		echo '<p>' . wp_kses_post( __( 'The interactive map loads tiles from <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>. Loading it sends your IP address and request data to the tile service under its <a href="https://operations.osmfoundation.org/policies/tiles/" target="_blank" rel="noopener noreferrer">tile usage policy</a> and <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener noreferrer">privacy policy</a>.', 'aomark-listings' ) ) . '</p>';
 		printf(
@@ -1038,7 +1090,7 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 		echo '</div>';
 		printf( '<div id="%s" class="aomark-listings-location-map" data-aomark-location-map hidden></div>', esc_attr( $map_id ) );
 		echo '<div class="aomark-listings-location-meta">';
-		echo '<p class="aomark-listings-location-status" data-aomark-location-status aria-live="polite">' . esc_html__( 'Search for an address, then fine-tune the pin by dragging it or clicking the map.', 'aomark-listings' ) . '</p>';
+		echo '<p id="' . esc_attr( $status_id ) . '" class="aomark-listings-location-status" data-aomark-location-status aria-live="polite">' . esc_html__( 'Enter at least three characters, then choose Search address with Photon. Coordinates can also be entered directly without loading an external map.', 'aomark-listings' ) . '</p>';
 		echo '<p class="aomark-listings-location-attribution">' . wp_kses_post( __( 'Search by <a href="https://photon.komoot.io/" target="_blank" rel="noopener noreferrer">Photon</a> · Data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.', 'aomark-listings' ) ) . '</p>';
 		echo '</div>';
 		echo '</div>';
@@ -1053,7 +1105,8 @@ function aomark_listings_render_admin_field_input( $post_id, $field ) {
 	}
 
 	printf(
-		'<input class="widefat" type="%1$s" step="%2$s" name="aomark_listing_meta[%3$s]" value="%4$s" placeholder="%5$s">',
+		'<input id="%1$s" class="widefat" type="%2$s" step="%3$s" name="aomark_listing_meta[%4$s]" value="%5$s" placeholder="%6$s">',
+		esc_attr( $control_id ),
 		esc_attr( $input_type ),
 		'number' === $input_type ? 'any' : '',
 		esc_attr( $key ),
@@ -1109,14 +1162,22 @@ function aomark_listings_render_meta_box( $post, $box ) {
 
 	$group_keys   = array_keys( $groups );
 	$active_group = reset( $group_keys );
+	$has_tabs     = count( $groups ) > 1;
 	echo '<div class="aomark-listings-metabox-shell aomark-admin">';
 
-	if ( count( $groups ) > 1 ) {
-		echo '<nav class="aomark-listings-metabox-tabs aomark-tabs" aria-label="' . esc_attr__( 'Listing field groups', 'aomark-listings' ) . '">';
+	if ( $has_tabs ) {
+		echo '<nav class="aomark-listings-metabox-tabs" role="tablist" aria-label="' . esc_attr__( 'Listing field groups', 'aomark-listings' ) . '">';
 		foreach ( $groups as $group => $fields ) {
+			$tab_id   = 'aomark-listings-metabox-tab-' . $post->ID . '-' . sanitize_html_class( $group );
+			$panel_id = 'aomark-listings-metabox-panel-' . $post->ID . '-' . sanitize_html_class( $group );
+			$is_active = $active_group === $group;
 			printf(
-				'<button type="button" class="aomark-tab %1$s" data-aomark-metabox-tab="%2$s">%3$s <span>%4$d</span></button>',
-				$active_group === $group ? 'is-active' : '',
+				'<button id="%1$s" type="button" class="aomark-listings-metabox-tab %2$s" role="tab" aria-selected="%3$s" aria-controls="%4$s" tabindex="%5$d" data-aomark-metabox-tab="%6$s">%7$s <span>%8$d</span></button>',
+				esc_attr( $tab_id ),
+				$is_active ? 'is-active' : '',
+				$is_active ? 'true' : 'false',
+				esc_attr( $panel_id ),
+				$is_active ? 0 : -1,
 				esc_attr( $group ),
 				esc_html( aomark_listings_metabox_group_label( $group ) ),
 				count( $fields )
@@ -1125,19 +1186,36 @@ function aomark_listings_render_meta_box( $post, $box ) {
 		echo '</nav>';
 	}
 
-	echo '<div class="aomark-listings-metabox-panels aomark-tabs-content">';
+	echo '<div class="aomark-listings-metabox-panels">';
 	foreach ( $groups as $group => $fields ) {
-		printf(
-			'<section class="aomark-listings-metabox-panel aomark-tab-panel %1$s" data-aomark-metabox-panel="%2$s">',
-			$active_group === $group ? 'is-active' : '',
-			esc_attr( $group )
-		);
+		$tab_id    = 'aomark-listings-metabox-tab-' . $post->ID . '-' . sanitize_html_class( $group );
+		$panel_id  = 'aomark-listings-metabox-panel-' . $post->ID . '-' . sanitize_html_class( $group );
+		$is_active = $active_group === $group;
+		if ( $has_tabs ) {
+			printf(
+				'<section id="%1$s" class="aomark-listings-metabox-panel %2$s" role="tabpanel" aria-labelledby="%3$s" data-aomark-metabox-panel="%4$s"%5$s>',
+				esc_attr( $panel_id ),
+				$is_active ? 'is-active' : '',
+				esc_attr( $tab_id ),
+				esc_attr( $group ),
+				$is_active ? '' : ' hidden'
+			);
+		} else {
+			echo '<section class="aomark-listings-metabox-panel is-active" data-aomark-metabox-panel="' . esc_attr( $group ) . '">';
+		}
 		echo '<div class="aomark-listings-metabox">';
 
 		foreach ( $fields as $field ) {
-			$help = function_exists( 'aomark_listings_help_tip' ) ? aomark_listings_help_tip( aomark_listings_field_help_text( $field ) ) : '';
-			echo '<div class="aomark-listings-metabox-field aomark-listings-metabox-field--' . esc_attr( $field['type'] ) . '">';
-			echo '<label><strong>' . esc_html( $field['label'] ) . '</strong> ' . $help . '</label>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			$help       = function_exists( 'aomark_listings_help_tip' ) ? aomark_listings_help_tip( aomark_listings_field_help_text( $field ) ) : '';
+			$control_id = aomark_listings_admin_field_control_id( $post->ID, $field );
+			$is_media_field = in_array( $field['type'], [ 'image', 'gallery' ], true );
+			$label_id       = $control_id . '-label';
+			echo '<div class="aomark-listings-metabox-field aomark-listings-metabox-field--' . esc_attr( $field['type'] ) . '"' . ( $is_media_field ? ' role="group" aria-labelledby="' . esc_attr( $label_id ) . '"' : '' ) . '>';
+			if ( $is_media_field ) {
+				echo '<div id="' . esc_attr( $label_id ) . '" class="aomark-listings-metabox-field-label"><strong>' . esc_html( $field['label'] ) . '</strong> ' . $help . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			} else {
+				echo '<div class="aomark-listings-metabox-field-label"><label for="' . esc_attr( $control_id ) . '"><strong>' . esc_html( $field['label'] ) . '</strong></label> ' . $help . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
 			aomark_listings_render_admin_field_input( $post->ID, $field );
 			echo '</div>';
 		}

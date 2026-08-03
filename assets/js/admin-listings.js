@@ -13,12 +13,12 @@
 			'aria-selected': 'false',
 			tabindex: '-1'
 		});
-		scope.find('[' + panelAttribute + ']').removeClass('is-active');
+		scope.find('[' + panelAttribute + ']').removeClass('is-active').prop('hidden', true);
 		button.addClass('is-active').attr({
 			'aria-selected': 'true',
 			tabindex: '0'
 		});
-		scope.find('[' + panelAttribute + '="' + tab + '"]').addClass('is-active');
+		scope.find('[' + panelAttribute + '="' + tab + '"]').addClass('is-active').prop('hidden', false);
 	}
 
 	function fieldSlug(value) {
@@ -152,6 +152,7 @@
 			editor.data('aomark-location-ready', true);
 
 			var address = editor.find('[data-aomark-location-address]');
+			var searchButton = editor.find('[data-aomark-location-search-address]');
 			var latInput = editor.find('[data-aomark-location-lat]');
 			var lngInput = editor.find('[data-aomark-location-lng]');
 			var canvas = editor.find('[data-aomark-location-map]').get(0);
@@ -162,16 +163,16 @@
 			var settings = window.AomarkListingsAdmin || {};
 			var defaultCenter = Array.isArray(settings.defaultCenter) && settings.defaultCenter.length === 2 ? settings.defaultCenter : [20, 0];
 			var defaultZoom = parseInt(settings.defaultZoom, 10) || 2;
-			var timer = null;
 			var requestController = null;
 			var requestSequence = 0;
 			var map = null;
 			var marker = null;
+			var tileFailureAnnounced = false;
 
 			address.attr('data-aomark-selected-address', address.val() || '');
 
 			function validPoint(lat, lng) {
-				return isFinite(lat) && isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && !(lat === 0 && lng === 0);
+				return isFinite(lat) && isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 			}
 
 			function writePoint(lat, lng) {
@@ -275,14 +276,20 @@
 
 				canvas.hidden = false;
 				map = window.L.map(canvas, { scrollWheelZoom: false }).setView(defaultCenter, defaultZoom);
-				window.L.tileLayer(settings.tileUrl || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				var tileLayer = window.L.tileLayer(settings.tileUrl || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 					maxZoom: 19,
 					attribution: settings.tileAttribution || '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
 				}).addTo(map);
+				tileLayer.on('tileerror', function(){
+					if (tileFailureAnnounced) { return; }
+					tileFailureAnnounced = true;
+					status.text(adminString('mapTilesUnavailable', 'Map tiles could not be loaded. Coordinates can still be entered directly.'));
+				});
 				map.on('click', function(event){
 					setPoint(event.latlng.lat, event.latlng.lng, false, adminString('pinMoved', 'Pin position updated.'));
 				});
 				canvas._aomarkLocationMap = map;
+				canvas._aomarkLocationTileLayer = tileLayer;
 				var savedLat = parseFloat(latInput.val());
 				var savedLng = parseFloat(lngInput.val());
 				if (validPoint(savedLat, savedLng)) { setPoint(savedLat, savedLng, true); }
@@ -294,9 +301,23 @@
 
 			loadMapButton.on('click', loadMap);
 
+			latInput.add(lngInput).on('change', function(){
+				var lat = parseFloat(latInput.val());
+				var lng = parseFloat(lngInput.val());
+				if (!latInput.val() && !lngInput.val()) {
+					clearPoint();
+					status.text(adminString('coordinatesCleared', 'Coordinates cleared.'));
+					return;
+				}
+				if (!validPoint(lat, lng)) {
+					status.text(adminString('coordinatesInvalid', 'Enter a valid latitude from -90 to 90 and longitude from -180 to 180.'));
+					return;
+				}
+				setPoint(lat, lng, true, adminString('coordinatesUpdated', 'Coordinates updated.'));
+			});
+
 			address.on('input', function(){
 				var query = $.trim(address.val());
-				clearTimeout(timer);
 				requestSequence += 1;
 				if (requestController && requestController.abort) { requestController.abort(); }
 				requestController = null;
@@ -307,11 +328,25 @@
 					status.text(query ? adminString('typeMore', 'Type at least three characters to search.') : '');
 					return;
 				}
-				timer = setTimeout(function(){ searchAddress(query); }, 650);
+				status.text(adminString('readyToSearch', 'Choose Search address with Photon to request suggestions.'));
+			});
+
+			searchButton.on('click', function(){
+				var query = $.trim(address.val());
+				closeResults();
+				if (query.length < 3) {
+					status.text(adminString('typeMore', 'Type at least three characters to search.'));
+					address.trigger('focus');
+					return;
+				}
+				searchAddress(query);
 			});
 
 			address.on('keydown', function(event){
-				if (event.key === 'ArrowDown' && !results.prop('hidden')) {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					searchButton.trigger('click');
+				} else if (event.key === 'ArrowDown' && !results.prop('hidden')) {
 					event.preventDefault();
 					results.find('button').first().trigger('focus');
 				} else if (event.key === 'Escape') {
@@ -392,6 +427,20 @@
 				if (this._aomarkLocationMap) { this._aomarkLocationMap.invalidateSize(); }
 			});
 		}, 80);
+	});
+
+	$(document).on('keydown', '[data-aomark-metabox-tab]', function(event){
+		if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].indexOf(event.key) === -1) { return; }
+
+		var tabs = $(this).closest('[role="tablist"]').find('[data-aomark-metabox-tab]');
+		var index = tabs.index(this);
+		if (event.key === 'Home') { index = 0; }
+		if (event.key === 'End') { index = tabs.length - 1; }
+		if (event.key === 'ArrowLeft') { index = (index - 1 + tabs.length) % tabs.length; }
+		if (event.key === 'ArrowRight') { index = (index + 1) % tabs.length; }
+
+		event.preventDefault();
+		tabs.eq(index).trigger('click').trigger('focus');
 	});
 
 	$(document).on('click', '[data-aomark-toggle-row]', function(event){

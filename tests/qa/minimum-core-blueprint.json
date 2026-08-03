@@ -28,7 +28,7 @@
     },
     {
       "step": "activatePlugin",
-      "pluginPath": "/wordpress/wp-content/plugins/aomark-listings/aomark-real-estate.php"
+      "pluginPath": "/wordpress/wp-content/plugins/aomark-listings/aomark-listings.php"
     },
     {
       "step": "runPHP",

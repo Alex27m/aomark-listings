@@ -11,11 +11,15 @@
 	--alm-border-soft: #edf1f5;
 	--alm-surface: #fff;
 	--alm-soft: #f8fafc;
-	--alm-accent: #a855f7;
-	--alm-accent-2: #c026d3;
-	--alm-action: #a855f7;
+	--alm-accent: #7e22ce;
+	--alm-accent-2: #701a75;
+	--alm-action: #7e22ce;
 	color: var(--alm-ink);
 	font-family: inherit;
+}
+
+.aomark-listings-map-notice {
+	margin-top: 12px;
 }
 
 .aomark-listings-filter *,
@@ -93,7 +97,8 @@
 .aomark-listings-results__sort select:focus {
 	border-color: var(--alm-accent);
 	box-shadow: 0 0 0 2px color-mix(in srgb, var(--alm-accent) 22%, transparent);
-	outline: none;
+	outline: 2px solid #4c1d95;
+	outline-offset: 2px;
 }
 
 .aomark-listings-filter__field--button,
@@ -207,7 +212,8 @@
 
 [data-aomark-listings-results-inner]:focus,
 .aomark-listings-card:focus {
-	outline: 3px solid color-mix(in srgb, var(--alm-accent) 45%, #fff);
+	box-shadow: 0 0 0 2px #fff;
+	outline: 3px solid #4c1d95;
 	outline-offset: 4px;
 }
 
@@ -397,8 +403,38 @@
 .aomark-listings-reset:focus-visible,
 .aomark-listings-load-more:focus-visible,
 .aomark-listings-card__button:focus-visible {
-	outline: 3px solid color-mix(in srgb, var(--alm-accent) 45%, #fff);
+	box-shadow: 0 0 0 2px #fff;
+	outline: 3px solid #4c1d95;
 	outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+	.aomark-listings-filter__field input,
+	.aomark-listings-filter__field select,
+	.aomark-listings-results__sort select,
+	.aomark-listings-button,
+	.aomark-listings-reset,
+	.aomark-listings-load-more,
+	.aomark-listings-card__button,
+	.aomark-listings-pagination a,
+	.aomark-listings-pagination button {
+		border: 1px solid ButtonText;
+		forced-color-adjust: auto;
+	}
+
+	.aomark-listings-filter__field input:focus,
+	.aomark-listings-filter__field select:focus,
+	.aomark-listings-results__sort select:focus,
+	.aomark-listings-pagination a:focus-visible,
+	.aomark-listings-pagination button:focus-visible,
+	.aomark-listings-button:focus-visible,
+	.aomark-listings-reset:focus-visible,
+	.aomark-listings-load-more:focus-visible,
+	.aomark-listings-card__button:focus-visible {
+		box-shadow: none;
+		outline: 3px solid Highlight;
+		outline-offset: 3px;
+	}
 }
 
 .aomark-listings-empty {
@@ -499,7 +535,8 @@ span.aomark-listings-field {
 }
 
 .aomark-listings-gallery__item:focus-visible {
-	outline: 3px solid color-mix(in srgb, var(--alm-accent) 45%, #fff);
+	box-shadow: 0 0 0 2px #fff;
+	outline: 3px solid #4c1d95;
 	outline-offset: 3px;
 }
 

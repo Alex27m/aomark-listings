@@ -219,7 +219,7 @@ test('exact WordPress.org ZIP is deterministic, lean, licensed, and updater-free
 	const names = entries.map(({ name }) => name);
 	const expectedNames = PACKAGE_FILES.map((name) => `${PLUGIN_SLUG}/${name}`);
 
-	assert.equal(PACKAGE_FILES.length, 32, 'the reviewed lean allowlist must remain exactly 32 files');
+	assert.equal(PACKAGE_FILES.length, 33, 'the reviewed lean allowlist must remain exactly 33 files');
 	assert.equal(entries.length, PACKAGE_FILES.length);
 	assert.deepEqual(sorted(names), sorted(expectedNames));
 	assert.deepEqual(names, sorted(expectedNames), 'ZIP entries must use deterministic byte order');
@@ -283,6 +283,9 @@ test('exact WordPress.org ZIP is deterministic, lean, licensed, and updater-free
 	);
 
 	const mainSource = entries
+		.find(({ name }) => name === `${PLUGIN_SLUG}/${PLUGIN_SLUG}.php`)
+		?.contents.toString('utf8') ?? '';
+	const legacySource = entries
 		.find(({ name }) => name === `${PLUGIN_SLUG}/aomark-real-estate.php`)
 		?.contents.toString('utf8') ?? '';
 	const readmeSource = entries
@@ -311,6 +314,8 @@ test('exact WordPress.org ZIP is deterministic, lean, licensed, and updater-free
 	assert.ok(contributors.includes('alex2703'), 'readme must credit the WordPress.org owner');
 	assert.doesNotMatch(mainSource, /^\s*\*\s+Update URI:/mi);
 	assert.match(mainSource, /^\s*\*\s+Text Domain:\s+aomark-listings\s*$/m);
+	assert.doesNotMatch(legacySource, /^\s*\*\s+Plugin Name:/m, 'legacy bootstrap must not expose a second plugin header');
+	assert.match(legacySource, /aomark-listings\.php/, 'legacy bootstrap must load the canonical main file');
 
 	const pluginLicense = mainSource.match(/^\s*\*\s+License:\s*(.+?)\s*$/m)?.[1];
 	const readmeLicense = readmeSource.match(/^License:\s*(.+?)\s*$/m)?.[1];
