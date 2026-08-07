@@ -3,7 +3,7 @@
  * Plugin Name: Aomark Listings
  * Plugin URI: https://github.com/Alex27m/aomark-listings
  * Description: Elementor-first listing models, custom post types, fields, filters, maps and listing widgets by Aomark.io.
- * Version: 3.5.2
+ * Version: 3.5.3
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Aomark.io
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'AOMARK_LISTINGS_VERSION', '3.5.2' );
+define( 'AOMARK_LISTINGS_VERSION', '3.5.3' );
 define( 'AOMARK_LISTINGS_PLUGIN_FILE', __FILE__ );
 define( 'AOMARK_LISTINGS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AOMARK_LISTINGS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

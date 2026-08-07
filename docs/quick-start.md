@@ -33,7 +33,7 @@ Use **Add listing** from the Aomark Listings dashboard. The normal WordPress fie
 - Excerpt: optional short WordPress summary.
 - Aomark structured fields: filterable and reusable listing data.
 
-For a location, search for an address, explicitly load the OpenStreetMap tiles after reviewing the notice, and then fine-tune the marker by dragging it or clicking the map.
+For a location, open the **Location** section and review its OpenStreetMap notice. Hidden Location tabs do not request tiles; opening the section automatically loads the map and sends normal browser request data, including the administrator's IP address, to the tile provider. Address search remains a separate explicit Photon action. Fine-tune the marker by dragging it or clicking the map.
 
 ## 4. Build a listings page in Elementor
 

@@ -140,6 +140,33 @@
 		return strings[key] || fallback;
 	}
 
+	function loadVisibleLocationMaps(context) {
+		var root = $(context || document);
+		var editors = root.is('[data-aomark-location-editor]') ? root : root.find('[data-aomark-location-editor]');
+
+		editors.filter(':visible').each(function(){
+			var loadMap = $(this).data('aomark-location-load-map');
+			if (typeof loadMap === 'function') { loadMap(); }
+		});
+	}
+
+	function refreshVisibleLocationMaps(context) {
+		var root = $(context || document);
+
+		initLocationEditors(root);
+		loadVisibleLocationMaps(root);
+		setTimeout(function(){
+			root.find('[data-aomark-location-map]:visible').each(function(){
+				if (this._aomarkLocationMap) { this._aomarkLocationMap.invalidateSize(); }
+			});
+		}, 80);
+	}
+
+	function syncMediaClear(wrap) {
+		var hasValue = $.trim(String(wrap.find('input[type="hidden"]').first().val() || '')) !== '';
+		wrap.find('.aomark-listings-clear-media').prop('hidden', !hasValue);
+	}
+
 	function initLocationEditors(context) {
 		var editors = $(context || document).find('[data-aomark-location-editor]');
 		if ($(context).is && $(context).is('[data-aomark-location-editor]')) {
@@ -156,8 +183,6 @@
 			var latInput = editor.find('[data-aomark-location-lat]');
 			var lngInput = editor.find('[data-aomark-location-lng]');
 			var canvas = editor.find('[data-aomark-location-map]').get(0);
-			var consent = editor.find('[data-aomark-location-consent]');
-			var loadMapButton = editor.find('[data-aomark-location-load-map]');
 			var results = editor.find('[data-aomark-location-results]');
 			var status = editor.find('[data-aomark-location-status]');
 			var settings = window.AomarkListingsAdmin || {};
@@ -293,13 +318,12 @@
 				var savedLat = parseFloat(latInput.val());
 				var savedLng = parseFloat(lngInput.val());
 				if (validPoint(savedLat, savedLng)) { setPoint(savedLat, savedLng, true); }
-				loadMapButton.attr('aria-expanded', 'true').text(adminString('mapLoadedButton', 'Map loaded'));
-				consent.addClass('is-loaded');
 				status.text(adminString('mapLoaded', 'Map loaded. Drag the pin or click the map to fine-tune it.'));
 				setTimeout(function(){ map.invalidateSize(); }, 100);
 			}
 
-			loadMapButton.on('click', loadMap);
+			editor.data('aomark-location-load-map', loadMap);
+			if (canvas) { canvas._aomarkLoadLocationMap = loadMap; }
 
 			latInput.add(lngInput).on('change', function(){
 				var lat = parseFloat(latInput.val());
@@ -362,7 +386,7 @@
 					result.attr('data-lat'),
 					result.attr('data-lng'),
 					true,
-					map ? adminString('locationSet', 'Location selected.') : adminString('locationSaved', 'Location selected. Load the map to fine-tune the pin.')
+					adminString('locationSet', 'Location selected.')
 				);
 				closeResults();
 				address.trigger('focus');
@@ -400,6 +424,23 @@
 		});
 	}
 
+	function observeLocationEditors() {
+		if (!window.MutationObserver || !document.body) { return; }
+
+		var observer = new window.MutationObserver(function(mutations){
+			mutations.forEach(function(mutation){
+				$(mutation.addedNodes).each(function(){
+					if (this.nodeType !== 1) { return; }
+					var scope = $(this);
+					if (!scope.is('[data-aomark-location-editor]') && !scope.find('[data-aomark-location-editor]').length) { return; }
+					refreshVisibleLocationMaps(this);
+				});
+			});
+		});
+
+		observer.observe(document.body, { childList: true, subtree: true });
+	}
+
 	$(document).on('click', '[data-aomark-admin-tab]', function(event){
 		event.preventDefault();
 		activateTab($(this), 'data-aomark-admin-tab', 'data-aomark-admin-panel');
@@ -421,12 +462,15 @@
 
 	$(document).on('click', '[data-aomark-metabox-tab]', function(event){
 		event.preventDefault();
-		activateTab($(this), 'data-aomark-metabox-tab', 'data-aomark-metabox-panel');
-		setTimeout(function(){
-			$('[data-aomark-location-map]').each(function(){
-				if (this._aomarkLocationMap) { this._aomarkLocationMap.invalidateSize(); }
-			});
-		}, 80);
+		var button = $(this);
+		var scope = button.closest('.aomark-listings-metabox-shell');
+		var panel = scope.find('[data-aomark-metabox-panel="' + button.attr('data-aomark-metabox-tab') + '"]').first();
+		activateTab(button, 'data-aomark-metabox-tab', 'data-aomark-metabox-panel');
+		refreshVisibleLocationMaps(panel);
+	});
+
+	$(document).on('postbox-toggled', function(event, postbox){
+		refreshVisibleLocationMaps(postbox || document);
 	});
 
 	$(document).on('keydown', '[data-aomark-metabox-tab]', function(event){
@@ -545,6 +589,7 @@
 			var url = data.sizes && data.sizes.thumbnail ? data.sizes.thumbnail.url : data.url;
 			var preview = wrap.find('.aomark-listings-media-preview').empty();
 			if (url) { $('<img>', { src: url, alt: '' }).appendTo(preview); }
+			syncMediaClear(wrap);
 		}, false);
 	});
 
@@ -565,18 +610,25 @@
 				}
 			});
 			wrap.find('input[type="hidden"]').val(ids.join(','));
+			syncMediaClear(wrap);
 		}, true);
 	});
 
 	$(document).on('click', '.aomark-listings-clear-media', function(event){
 		event.preventDefault();
 		var wrap = $(this).closest('.aomark-listings-media-field, .aomark-listings-gallery-field');
+		var chooseButton = wrap.find('.aomark-listings-select-image, .aomark-listings-select-gallery').first();
 		wrap.find('input[type="hidden"]').val('');
 		wrap.find('.aomark-listings-media-preview, .aomark-listings-gallery-preview').empty();
+		chooseButton.trigger('focus');
+		syncMediaClear(wrap);
 	});
 
 	$(function(){
 		initLocationEditors(document);
+		loadVisibleLocationMaps(document);
+		observeLocationEditors();
+		$('.aomark-listings-media-field, .aomark-listings-gallery-field').each(function(){ syncMediaClear($(this)); });
 		$('.aomark-listings-repeater-row').each(function(){ syncRowSummary($(this)); });
 		syncEmptyState('field');
 		syncEmptyState('taxonomy');

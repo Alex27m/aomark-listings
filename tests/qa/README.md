@@ -116,7 +116,7 @@ and the 200-marker server cap:
 This is a bounded abuse/regression gate, not a claim of 5,000-record MySQL,
 Core Web Vitals, or production-host load coverage.
 
-## Exact 3.5.1 to 3.5.2 basename upgrade
+## Exact 3.5.1 to 3.5.3 basename upgrade
 
 These fixtures install the immutable 3.5.1 release ZIP, activate its historical
 `aomark-real-estate.php` entry point, overlay the exact current ZIP, and prove
@@ -131,7 +131,7 @@ Mount the directory containing
 `dist` directory at `/tmp/aomark-new`, and `tests/qa` at `/tmp/aomark-qa`:
 
 - immutable 3.5.1 SHA-256: `0181D246CF09CB6A56ABE1E74BC3936EC896008D8800417E76D1B92BCB80B20E`
-- reviewed 3.5.2 SHA-256: `F579FBE2786A3B29982B25E41460B1393D160577E7DA439DA4F9DBB91C901684`
+- reviewed 3.5.3 SHA-256: `04D3AED041160C68EA958ED92DE1C5AD4CE06467031F5D867EC2A2900146C0F8`
 
 Both Blueprints verify these checksums before installing either package, so a
 different ZIP with the same version string cannot pass the upgrade gate.

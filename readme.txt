@@ -4,7 +4,7 @@ Tags: listings, elementor, directory, real estate, maps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.2
+Stable tag: 3.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,7 +86,7 @@ Service terms of use: [Photon service homepage](https://photon.komoot.io/). Addi
 
 = OpenStreetMap tiles =
 
-The default map layer is requested from `https://tile.openstreetmap.org/`. In the listing editor, tiles load only after the administrator clicks the explicit Load OpenStreetMap map button. On the frontend, tiles load when a site owner has placed a Listing Map widget on the page. Requests go directly from that person's browser to the tile service. The provider can receive the IP address, browser User-Agent, referrer, and requested tile coordinates as part of a normal web request.
+The default map layer is requested from `https://tile.openstreetmap.org/`. In the listing editor, hidden Location tabs do not request tiles. Opening a Location tab automatically loads its map, so the administrator's browser sends normal requests directly to the tile service. On the frontend, tiles load when a site owner has placed a Listing Map widget on the page. The provider can receive the person's IP address, browser User-Agent, referrer, and requested tile coordinates as part of a normal web request.
 
 Service information: [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/), [OpenStreetMap Foundation privacy policy](https://osmfoundation.org/wiki/Privacy_Policy), and [copyright and attribution](https://www.openstreetmap.org/copyright).
 
@@ -95,6 +95,11 @@ Developers can replace the HTTPS tile template and attribution with the `aomark_
 Aomark Listings adds suggested text to WordPress' Privacy Policy Guide so the site owner can describe the actual setup to visitors. The plugin itself sends no analytics or telemetry to Aomark.
 
 == Changelog ==
+
+= 3.5.3 =
+* Refined the listings dashboard and native editor layout to reduce visual clutter and improve responsive spacing.
+* Made editor maps load automatically when their Location section becomes visible while keeping hidden tabs inactive and retaining external-service disclosure.
+* Aligned media actions and kept Clear available only when a selection exists.
 
 = 3.5.2 =
 * Aligned the canonical main plugin filename with the WordPress.org slug while retaining a migration bootstrap for existing installations.

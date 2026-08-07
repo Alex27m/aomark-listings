@@ -2,7 +2,7 @@
   "$schema": "https://playground.wordpress.net/blueprint-schema.json",
   "meta": {
     "title": "Aomark Listings network legacy basename upgrade QA",
-    "description": "Verifies the exact 3.5.1 to 3.5.2 main-filename migration for a network-activated plugin.",
+    "description": "Verifies the exact 3.5.1 to 3.5.3 main-filename migration for a network-activated plugin.",
     "author": "aomark"
   },
   "preferredVersions": {
@@ -21,7 +21,7 @@
     },
     {
       "step": "runPHP",
-      "code": "<?php $hashes = [ 'old' => hash_file( 'sha256', '/tmp/aomark-old/aomark-listings-3.5.1-wporg-final-20260731.zip' ), 'new' => hash_file( 'sha256', '/tmp/aomark-new/aomark-listings.zip' ) ]; if ( ! hash_equals( '0181d246cf09cb6a56abe1e74bc3936ec896008d8800417e76d1b92bcb80b20e', (string) $hashes['old'] ) || ! hash_equals( 'f579fbe2786a3b29982b25e41460b1393d160577e7da439da4f9dbb91c901684', (string) $hashes['new'] ) ) { throw new RuntimeException( 'Exact ZIP checksum precondition failed: ' . json_encode( $hashes ) ); }"
+      "code": "<?php $hashes = [ 'old' => hash_file( 'sha256', '/tmp/aomark-old/aomark-listings-3.5.1-wporg-final-20260731.zip' ), 'new' => hash_file( 'sha256', '/tmp/aomark-new/aomark-listings.zip' ) ]; if ( ! hash_equals( '0181d246cf09cb6a56abe1e74bc3936ec896008d8800417e76d1b92bcb80b20e', (string) $hashes['old'] ) || ! hash_equals( '04d3aed041160c68ea958ed92de1c5ad4ce06467031f5d867ec2a2900146c0f8', (string) $hashes['new'] ) ) { throw new RuntimeException( 'Exact ZIP checksum precondition failed: ' . json_encode( $hashes ) ); }"
     },
     {
       "step": "enableMultisite"

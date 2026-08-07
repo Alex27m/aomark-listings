@@ -550,12 +550,10 @@ function aomark_listings_admin_enqueue( $hook ) {
 					'searchError'    => __( 'Address search is temporarily unavailable.', 'aomark-listings' ),
 					'mapUnavailable' => __( 'Map could not be loaded. Check the internet connection and reload the editor.', 'aomark-listings' ),
 					'mapLoaded'      => __( 'Map loaded. Drag the pin or click the map to fine-tune it.', 'aomark-listings' ),
-					'mapLoadedButton' => __( 'Map loaded', 'aomark-listings' ),
 					'mapTilesUnavailable' => __( 'Map tiles could not be loaded. Coordinates can still be entered directly.', 'aomark-listings' ),
 					'typeMore'       => __( 'Type at least three characters to search.', 'aomark-listings' ),
 					'readyToSearch'  => __( 'Choose Search address with Photon to request suggestions.', 'aomark-listings' ),
 					'locationSet'    => __( 'Location selected. Drag the pin or click the map to fine-tune it.', 'aomark-listings' ),
-					'locationSaved'  => __( 'Location selected. Load the map to fine-tune the pin.', 'aomark-listings' ),
 					'pinMoved'       => __( 'Pin position updated.', 'aomark-listings' ),
 					'coordinatesUpdated' => __( 'Coordinates updated.', 'aomark-listings' ),
 					'coordinatesCleared' => __( 'Coordinates cleared.', 'aomark-listings' ),
@@ -765,13 +763,12 @@ function aomark_listings_render_preset_creator() {
 		],
 	];
 	?>
-	<div id="aomark-create-listing-type" class="aomark-listings-admin-panel aomark-card aomark-listings-create-panel">
+	<div class="aomark-listings-admin-panel aomark-card aomark-listings-create-panel">
 		<div class="aomark-listings-panel-head">
 			<div>
-				<h2><?php esc_html_e( 'Create a listing type', 'aomark-listings' ); ?></h2>
+				<h2><?php esc_html_e( 'New listing type', 'aomark-listings' ); ?></h2>
 				<p><?php esc_html_e( 'Choose the closest starting point. Every field and category can be adjusted afterwards.', 'aomark-listings' ); ?></p>
 			</div>
-			<span class="aomark-listings-step-badge"><?php esc_html_e( 'About 1 minute', 'aomark-listings' ); ?></span>
 		</div>
 
 		<form method="post" class="aomark-listings-create-form" data-aomark-preset-form>
@@ -820,39 +817,15 @@ function aomark_listings_render_preset_creator() {
  * @param array $models Registered listing types.
  */
 function aomark_listings_render_dashboard( $models ) {
-	$total_published = 0;
-	foreach ( $models as $model ) {
-		$counts          = aomark_listings_admin_model_counts( $model );
-		$total_published += $counts['published'];
-	}
 	?>
-	<div class="aomark-listings-dashboard-intro">
-		<div>
-			<p class="aomark-listings-eyebrow"><?php esc_html_e( 'Your workspace', 'aomark-listings' ); ?></p>
-			<h2><?php esc_html_e( 'Listing types', 'aomark-listings' ); ?></h2>
-			<p><?php esc_html_e( 'Choose what you want to work on. Each card shows its current status and next useful actions.', 'aomark-listings' ); ?></p>
-		</div>
-		<div class="aomark-listings-dashboard-total">
-			<strong><?php echo esc_html( count( $models ) ); ?></strong>
-			<span><?php esc_html_e( 'listing types', 'aomark-listings' ); ?></span>
-			<small>
-				<?php
-				printf(
-					/* translators: %s: number of published listings. */
-					esc_html__( '%s published listings', 'aomark-listings' ),
-					esc_html( $total_published )
-				);
-				?>
-			</small>
-		</div>
-	</div>
+	<h2 class="screen-reader-text"><?php esc_html_e( 'Listing types overview', 'aomark-listings' ); ?></h2>
 
 	<?php if ( empty( $models ) ) : ?>
 		<div class="aomark-listings-empty-state">
 			<span class="dashicons dashicons-screenoptions" aria-hidden="true"></span>
 			<h3><?php esc_html_e( 'Create your first listing type', 'aomark-listings' ); ?></h3>
 			<p><?php esc_html_e( 'Start with a preset below. Technical WordPress settings are generated for you.', 'aomark-listings' ); ?></p>
-			<a class="button button-primary" href="#aomark-create-listing-type"><?php esc_html_e( 'Choose a starting point', 'aomark-listings' ); ?></a>
+			<a class="button button-primary" href="<?php echo esc_url( aomark_listings_admin_url( [ 'create' => '1' ] ) ); ?>"><?php esc_html_e( 'Choose a starting point', 'aomark-listings' ); ?></a>
 		</div>
 	<?php else : ?>
 		<div class="aomark-listings-dashboard-grid">
@@ -872,9 +845,9 @@ function aomark_listings_render_dashboard( $models ) {
 							<h3><?php echo esc_html( $model['plural'] ); ?></h3>
 							<p><?php echo esc_html( $model['singular'] ); ?></p>
 						</div>
-						<span class="aomark-listings-status-pill <?php echo $has_fields ? 'is-ready' : 'needs-attention'; ?>">
-							<?php echo $has_fields ? esc_html__( 'Ready', 'aomark-listings' ) : esc_html__( 'Needs fields', 'aomark-listings' ); ?>
-						</span>
+						<?php if ( ! $has_fields ) : ?>
+							<span class="aomark-listings-status-pill needs-attention"><?php esc_html_e( 'Needs fields', 'aomark-listings' ); ?></span>
+						<?php endif; ?>
 					</header>
 
 					<div class="aomark-listings-card-stats">
@@ -883,12 +856,6 @@ function aomark_listings_render_dashboard( $models ) {
 						<span><strong><?php echo esc_html( $counts['fields'] ); ?></strong><?php esc_html_e( 'Fields', 'aomark-listings' ); ?></span>
 						<span><strong><?php echo esc_html( $counts['filters'] ); ?></strong><?php esc_html_e( 'Filters', 'aomark-listings' ); ?></span>
 					</div>
-
-					<ol class="aomark-listings-task-list">
-						<li class="is-complete"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span><?php esc_html_e( 'Listing type created', 'aomark-listings' ); ?></li>
-						<li class="<?php echo $has_fields ? 'is-complete' : ''; ?>"><span class="dashicons <?php echo $has_fields ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>" aria-hidden="true"></span><?php esc_html_e( 'Fields and filters reviewed', 'aomark-listings' ); ?></li>
-						<li class="<?php echo $has_content ? 'is-complete' : ''; ?>"><span class="dashicons <?php echo $has_content ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>" aria-hidden="true"></span><?php esc_html_e( 'First listing added', 'aomark-listings' ); ?></li>
-					</ol>
 
 					<div class="aomark-listings-card-actions">
 						<a class="button button-primary" href="<?php echo esc_url( $has_content ? $content_url : $add_url ); ?>"><?php echo $has_content ? esc_html__( 'Manage listings', 'aomark-listings' ) : esc_html__( 'Add first listing', 'aomark-listings' ); ?></a>
@@ -899,14 +866,6 @@ function aomark_listings_render_dashboard( $models ) {
 		</div>
 	<?php endif; ?>
 
-	<div class="aomark-listings-next-step">
-		<span class="dashicons dashicons-welcome-widgets-menus" aria-hidden="true"></span>
-		<div>
-			<strong><?php esc_html_e( 'Ready to build the public page?', 'aomark-listings' ); ?></strong>
-			<p><?php esc_html_e( 'Create a WordPress page, open it in Elementor and add the Aomark Listing Filter, Results and Map widgets.', 'aomark-listings' ); ?></p>
-		</div>
-		<a class="button" href="<?php echo esc_url( add_query_arg( 'post_type', 'page', admin_url( 'post-new.php' ) ) ); ?>"><?php esc_html_e( 'Create a page', 'aomark-listings' ); ?></a>
-	</div>
 	<?php
 }
 
@@ -915,10 +874,11 @@ function aomark_listings_render_admin_page() {
 		return;
 	}
 
-	$models  = aomark_listings_get_models();
-	$edit_id = isset( $_GET['edit'] ) ? aomark_listings_sanitize_id( wp_unslash( $_GET['edit'] ) ) : '';
-	$editing = '' !== $edit_id && isset( $models[ $edit_id ] ) ? $models[ $edit_id ] : null;
-	if ( '' !== $edit_id && ! $editing ) {
+	$models   = aomark_listings_get_models();
+	$creating = empty( $models ) || ( isset( $_GET['create'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['create'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only view selection.
+	$edit_id  = isset( $_GET['edit'] ) ? aomark_listings_sanitize_id( wp_unslash( $_GET['edit'] ) ) : '';
+	$editing  = ! $creating && '' !== $edit_id && isset( $models[ $edit_id ] ) ? $models[ $edit_id ] : null;
+	if ( ! $creating && '' !== $edit_id && ! $editing ) {
 		aomark_listings_admin_notice( __( 'That listing type could not be found. Choose an available type below.', 'aomark-listings' ), 'error' );
 	}
 	aomark_listings_admin_add_query_notices( $editing );
@@ -929,15 +889,7 @@ function aomark_listings_render_admin_page() {
 		<?php settings_errors( 'aomark_listings_messages' ); ?>
 		<header class="aomark-listings-admin-header aomark-settings__header aomark-settings__brandbar">
 			<div class="aomark-listings-brand">
-				<div>
-					<h1><?php esc_html_e( 'Aomark Listings', 'aomark-listings' ); ?></h1>
-					<p><?php esc_html_e( 'Create, organize and display structured listings without managing WordPress internals.', 'aomark-listings' ); ?></p>
-				</div>
-			</div>
-			<div class="aomark-listings-header-actions">
-				<a class="aomark-listings-brand-logo-link" href="https://aomark.io" target="_blank" rel="noopener noreferrer">
-					<img class="aomark-listings-brand-logo" src="<?php echo esc_url( AOMARK_LISTINGS_PLUGIN_URL . 'assets/img/aomark-logo-white.png' ); ?>" alt="<?php esc_attr_e( 'Aomark', 'aomark-listings' ); ?>">
-				</a>
+				<h1><?php esc_html_e( 'Aomark Listings', 'aomark-listings' ); ?></h1>
 			</div>
 		</header>
 
@@ -948,7 +900,7 @@ function aomark_listings_render_admin_page() {
 						<h2><?php esc_html_e( 'Listing types', 'aomark-listings' ); ?></h2>
 						<?php echo aomark_listings_help_tip( __( 'A listing type keeps the fields, categories and filters for one kind of content together.', 'aomark-listings' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					</div>
-					<a class="aomark-listings-overview-link<?php echo $editing ? '' : ' is-active'; ?>" href="<?php echo esc_url( aomark_listings_admin_url() ); ?>">
+					<a class="aomark-listings-overview-link<?php echo ! $editing && ! $creating ? ' is-active' : ''; ?>" href="<?php echo esc_url( aomark_listings_admin_url() ); ?>"<?php if ( ! $editing && ! $creating ) : ?> aria-current="page"<?php endif; ?>>
 						<span class="dashicons dashicons-grid-view" aria-hidden="true"></span>
 						<?php esc_html_e( 'Overview', 'aomark-listings' ); ?>
 					</a>
@@ -959,7 +911,7 @@ function aomark_listings_render_admin_page() {
 							<?php foreach ( $models as $model ) : ?>
 								<?php $counts = aomark_listings_admin_model_counts( $model ); ?>
 								<li>
-									<a class="<?php echo $editing && $editing['id'] === $model['id'] ? 'is-active' : ''; ?>" href="<?php echo esc_url( aomark_listings_admin_url( [ 'edit' => $model['id'] ] ) ); ?>">
+									<a class="<?php echo $editing && $editing['id'] === $model['id'] ? 'is-active' : ''; ?>" href="<?php echo esc_url( aomark_listings_admin_url( [ 'edit' => $model['id'] ] ) ); ?>"<?php if ( $editing && $editing['id'] === $model['id'] ) : ?> aria-current="page"<?php endif; ?>>
 										<strong><?php echo esc_html( $model['plural'] ); ?></strong>
 										<span>
 											<?php
@@ -976,7 +928,7 @@ function aomark_listings_render_admin_page() {
 							<?php endforeach; ?>
 						</ul>
 					<?php endif; ?>
-					<a class="button aomark-listings-new-type-button" href="<?php echo esc_url( aomark_listings_admin_url() . '#aomark-create-listing-type' ); ?>">
+					<a class="button aomark-listings-new-type-button<?php echo $creating ? ' is-active' : ''; ?>" href="<?php echo esc_url( aomark_listings_admin_url( [ 'create' => '1' ] ) ); ?>"<?php if ( $creating ) : ?> aria-current="page"<?php endif; ?>>
 						<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
 						<?php esc_html_e( 'New listing type', 'aomark-listings' ); ?>
 					</a>
@@ -984,11 +936,12 @@ function aomark_listings_render_admin_page() {
 			</aside>
 
 			<main class="aomark-listings-admin-main">
-				<?php if ( $editing ) : ?>
+				<?php if ( $creating ) : ?>
+					<?php aomark_listings_render_preset_creator(); ?>
+				<?php elseif ( $editing ) : ?>
 					<?php aomark_listings_render_model_form( $editing ); ?>
 				<?php else : ?>
 					<?php aomark_listings_render_dashboard( $models ); ?>
-					<?php aomark_listings_render_preset_creator(); ?>
 				<?php endif; ?>
 			</main>
 			</div>
@@ -1000,13 +953,7 @@ function aomark_listings_render_admin_page() {
 function aomark_listings_render_model_form( $model ) {
 	$field_types = aomark_listings_supported_field_types();
 	$form_id     = 'aomark-listings-model-form-' . sanitize_html_class( $model['id'] );
-	$counts      = aomark_listings_admin_model_counts( $model );
 	$add_url     = add_query_arg( 'post_type', $model['post_type'], admin_url( 'post-new.php' ) );
-	$preset_names = [
-		'real_estate' => __( 'Real Estate', 'aomark-listings' ),
-		'directory'   => __( 'Directory', 'aomark-listings' ),
-		'custom'      => __( 'Custom', 'aomark-listings' ),
-	];
 	?>
 	<form id="<?php echo esc_attr( $form_id ); ?>" method="post" class="aomark-listings-model-form">
 		<?php wp_nonce_field( 'aomark_listings_admin', 'aomark_listings_nonce' ); ?>
@@ -1016,23 +963,8 @@ function aomark_listings_render_model_form( $model ) {
 
 		<div class="aomark-listings-admin-panel aomark-listings-model-editor aomark-card">
 			<div class="aomark-listings-model-toolbar">
-				<div>
-					<p class="aomark-listings-eyebrow"><?php esc_html_e( 'Listing type', 'aomark-listings' ); ?></p>
-					<h2><?php echo esc_html( $model['plural'] ); ?></h2>
-					<p>
-						<?php
-						printf(
-							/* translators: 1: published listing count, 2: draft listing count. */
-							esc_html__( '%1$s published · %2$s drafts', 'aomark-listings' ),
-							esc_html( $counts['published'] ),
-							esc_html( $counts['drafts'] )
-						);
-						?>
-					</p>
-				</div>
-				<div class="aomark-listings-model-badges">
-					<span><?php echo esc_html( $preset_names[ $model['preset'] ] ?? __( 'Custom', 'aomark-listings' ) ); ?></span>
-					<span><?php echo esc_html( count( (array) $model['fields'] ) ); ?> <?php esc_html_e( 'fields', 'aomark-listings' ); ?></span>
+				<h2><?php echo esc_html( $model['plural'] ); ?></h2>
+				<div class="aomark-listings-model-actions">
 					<a class="button" href="<?php echo esc_url( $add_url ); ?>"><?php esc_html_e( 'Add listing', 'aomark-listings' ); ?></a>
 				</div>
 			</div>
@@ -1045,13 +977,7 @@ function aomark_listings_render_model_form( $model ) {
 			</nav>
 
 			<section id="aomark-panel-basics" class="aomark-listings-tab-panel is-active" role="tabpanel" aria-labelledby="aomark-tab-basics" data-aomark-admin-panel="basics">
-				<div class="aomark-listings-section-intro">
-					<div>
-						<h3><?php esc_html_e( 'Names people will see', 'aomark-listings' ); ?></h3>
-						<p><?php esc_html_e( 'These names appear in the WordPress menu, content editor and listing widgets. They can be changed safely.', 'aomark-listings' ); ?></p>
-					</div>
-					<span class="aomark-listings-status-pill is-ready"><?php esc_html_e( 'Safe to edit', 'aomark-listings' ); ?></span>
-				</div>
+				<h3 class="screen-reader-text"><?php esc_html_e( 'Names people will see', 'aomark-listings' ); ?></h3>
 				<div class="aomark-listings-grid">
 					<label>
 						<span><?php esc_html_e( 'One item', 'aomark-listings' ); ?> <?php echo aomark_listings_help_tip( aomark_listings_admin_help_text( 'singular_label' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
@@ -1063,10 +989,6 @@ function aomark_listings_render_model_form( $model ) {
 						<input type="text" name="model[plural]" value="<?php echo esc_attr( $model['plural'] ); ?>" maxlength="120" required>
 						<small><?php esc_html_e( 'For example: Properties', 'aomark-listings' ); ?></small>
 					</label>
-				</div>
-				<div class="aomark-listings-basic-next">
-					<span class="dashicons dashicons-lightbulb" aria-hidden="true"></span>
-					<p><strong><?php esc_html_e( 'Next:', 'aomark-listings' ); ?></strong> <?php esc_html_e( 'Review Categories & Filters, then decide which Listing Fields should appear on result cards.', 'aomark-listings' ); ?></p>
 				</div>
 			</section>
 

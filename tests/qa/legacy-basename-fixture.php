@@ -32,7 +32,7 @@ $aomark_listings_active   = $aomark_listings_network
 	? array_keys( (array) get_site_option( 'active_sitewide_plugins', [] ) )
 	: (array) get_option( 'active_plugins', [] );
 
-aomark_listings_legacy_assert( 'runtime_version_3_5_2', defined( 'AOMARK_LISTINGS_VERSION' ) && '3.5.2' === AOMARK_LISTINGS_VERSION );
+aomark_listings_legacy_assert( 'runtime_version_3_5_3', defined( 'AOMARK_LISTINGS_VERSION' ) && '3.5.3' === AOMARK_LISTINGS_VERSION );
 aomark_listings_legacy_assert( 'canonical_runtime_file', defined( 'AOMARK_LISTINGS_PLUGIN_FILE' ) && $aomark_listings_current === plugin_basename( AOMARK_LISTINGS_PLUGIN_FILE ) );
 aomark_listings_legacy_assert( 'canonical_active_entry', in_array( $aomark_listings_current, $aomark_listings_active, true ) );
 aomark_listings_legacy_assert( 'legacy_active_entry_removed', ! in_array( $aomark_listings_old, $aomark_listings_active, true ) );

@@ -4,7 +4,7 @@
 [![PHP 7.4+](https://img.shields.io/badge/PHP-7.4%2B-777bb4.svg)](https://www.php.net/)
 [![License: GPL v2 or later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)](LICENSE)
 
-An Elementor-first WordPress listings engine for real-estate, directory, and custom listing sites. Version 3.5.2 keeps the existing data model and public URLs while making setup safer, clearer, progressively enhanced, and reliable with both pretty and plain permalinks.
+An Elementor-first WordPress listings engine for real-estate, directory, and custom listing sites. Version 3.5.3 keeps the existing data model and public URLs while making the admin experience lighter, clearer, progressively enhanced, and reliable with both pretty and plain permalinks.
 
 ## What it provides
 
@@ -44,7 +44,7 @@ The public `alm_*` URL format stores one state per listing type. If two groups f
 Leaflet 1.9.4 is included locally under `assets/vendor/leaflet/` with its license. Its human-readable source is available as [leaflet-src.js](https://unpkg.com/leaflet@1.9.4/dist/leaflet-src.js) and in the [official 1.9.4 source tag](https://github.com/Leaflet/Leaflet/tree/v1.9.4). The optional location features use two documented external services by default:
 
 - [Photon](https://photon.komoot.io/) for editor address search. The editor must explicitly choose the Photon search action after entering at least three characters. The address query, optional country code, plugin version/public project URL in the User-Agent, and normal server request metadata are then sent from WordPress to Photon; the individual site's URL is not included. Searches are rate limited, request at most five results, and successful responses are cached for 12 hours. See [Komoot's privacy policy](https://www.komoot.com/privacy).
-- [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/) for admin and frontend maps. Admin tiles are explicit click-to-load; frontend tiles load only on pages where a site owner placed the Map widget. A browser loading a map sends normal request data—such as IP address, User-Agent, referrer, and tile coordinates—to `tile.openstreetmap.org`. See the [OSMF privacy policy](https://osmfoundation.org/wiki/Privacy_Policy) and [attribution requirements](https://www.openstreetmap.org/copyright).
+- [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/) for admin and frontend maps. Hidden Location tabs do not request admin tiles; opening a Location tab automatically loads its map. Frontend tiles load only on pages where a site owner placed the Map widget. A browser loading either map sends normal request data—such as IP address, User-Agent, referrer, and tile coordinates—to `tile.openstreetmap.org`. See the [OSMF privacy policy](https://osmfoundation.org/wiki/Privacy_Policy) and [attribution requirements](https://www.openstreetmap.org/copyright).
 
 The plugin adds suggested disclosure text to WordPress' Privacy Policy Guide and sends no analytics or telemetry to Aomark.
 

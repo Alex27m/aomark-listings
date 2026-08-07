@@ -42,7 +42,7 @@ Use this matrix for release-candidate testing. The legacy fixture should be expo
 ### F — Degraded and accessibility
 
 - Disable JavaScript and verify filter, reset, sort, and numbered pagination.
-- Verify admin OpenStreetMap tiles make no request before the explicit load action.
+- Verify hidden Location tabs make no OpenStreetMap request, then confirm opening Location automatically loads tiles and exposes the documented browser request-data/IP disclosure.
 - Simulate Photon timeout/429 and blocked OpenStreetMap tiles.
 - Test zero listing types, deleted fields, missing coordinates, and stale Elementor references.
 - Complete keyboard-only checks, visible focus, results announcements, location combobox navigation, high contrast, zoom, and mobile layouts.
