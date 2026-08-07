@@ -1,6 +1,6 @@
 /**
  * Aomark Listings admin UI.
- * Focused Aomark dashboard with a WordPress-neutral listing editor.
+ * Focused Aomark dashboard with a WordPress-integrated listing editor.
  */
 
 .aomark-listings-admin,
@@ -28,7 +28,7 @@
 	--aomark-radius-pill: 999px;
 }
 
-/* The post editor follows WordPress' neutral canvas instead of the branded admin shell. */
+/* Keep the post editor on WordPress' light canvas, with restrained Aomark accents. */
 .aomark-listings-metabox-shell {
 	--aomark-bg: transparent;
 	--aomark-surface: #fff;
@@ -54,26 +54,32 @@
 /* Page shell and header */
 .aomark-listings-admin {
 	margin: 20px 20px 20px 0;
-	max-width: 1280px;
+	max-width: 1500px;
 }
 
 .aomark-listings-page {
-	background: transparent;
-	border-radius: 0;
-	margin: 0;
-	min-height: 0;
-	padding: 0;
+	background:
+		radial-gradient(ellipse at top, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+		radial-gradient(ellipse at bottom right, rgba(192, 38, 211, 0.06) 0%, transparent 50%),
+		var(--aomark-bg);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	border-radius: var(--aomark-radius);
+	box-shadow: var(--aomark-shadow);
+	margin: 20px auto;
+	min-height: 400px;
+	padding: 32px;
 }
 
 .aomark-listings-admin-header {
 	align-items: center;
 	background: transparent;
-	color: #1d2327;
+	border-bottom: 1px solid var(--aomark-border);
+	color: var(--aomark-text);
 	display: flex;
 	gap: 16px;
 	justify-content: space-between;
-	margin: 0 0 16px;
-	padding: 0;
+	margin: 0 0 24px;
+	padding: 0 0 20px;
 }
 
 .aomark-listings-brand {
@@ -83,8 +89,8 @@
 }
 
 .aomark-listings-brand h1 {
-	color: #1d2327;
-	font-size: 24px;
+	color: #fff;
+	font-size: 28px;
 	font-weight: 600;
 	line-height: 1.2;
 	margin: 0;
@@ -1379,8 +1385,8 @@
 }
 
 .aomark-listings-metabox-field {
-	background: var(--aomark-surface-2);
-	border: 1px solid var(--aomark-border);
+	background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(192, 38, 211, 0.04) 100%);
+	border: 1px solid rgba(126, 34, 206, 0.28);
 	border-radius: 8px;
 	padding: 12px;
 	transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1393,7 +1399,7 @@
 
 .aomark-listings-metabox-field-label {
 	align-items: center;
-	color: var(--aomark-text);
+	color: #581c87;
 	display: flex;
 	font-size: 12px;
 	font-weight: 600;
@@ -1665,12 +1671,16 @@
 	}
 
 	.aomark-listings-page {
-		padding: 0;
+		border-radius: 12px;
+		margin-top: 12px;
+		padding: 16px;
 	}
 
 	.aomark-listings-admin-header {
 		align-items: flex-start;
 		flex-direction: column;
+		margin-bottom: 18px;
+		padding-bottom: 16px;
 	}
 
 	.aomark-listings-brand h1 {
