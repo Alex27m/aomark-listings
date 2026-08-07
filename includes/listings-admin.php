@@ -891,6 +891,7 @@ function aomark_listings_render_admin_page() {
 			<div class="aomark-listings-brand">
 				<h1><?php esc_html_e( 'Aomark Listings', 'aomark-listings' ); ?></h1>
 			</div>
+			<img class="aomark-listings-brand-logo" src="<?php echo esc_url( AOMARK_LISTINGS_PLUGIN_URL . 'assets/img/aomark-logo-white.png' ); ?>" alt="" width="950" height="349">
 		</header>
 
 		<div class="aomark-listings-admin-layout">

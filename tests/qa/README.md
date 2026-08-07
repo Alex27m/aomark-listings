@@ -131,7 +131,7 @@ Mount the directory containing
 `dist` directory at `/tmp/aomark-new`, and `tests/qa` at `/tmp/aomark-qa`:
 
 - immutable 3.5.1 SHA-256: `0181D246CF09CB6A56ABE1E74BC3936EC896008D8800417E76D1B92BCB80B20E`
-- reviewed 3.5.3 SHA-256: `5A90D58F7E3FDA7F89A09F0AAC5D3FC8D00A4DE9F99351BDA5AD8AD3D25973A0`
+- reviewed 3.5.3 SHA-256: `E19F73746FFB0342E0581D83F129CE79BBD676FCDB78F53613B08AA1CFA04473`
 
 Both Blueprints verify these checksums before installing either package, so a
 different ZIP with the same version string cannot pass the upgrade gate.

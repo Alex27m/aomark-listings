@@ -96,6 +96,15 @@
 	margin: 0;
 }
 
+.aomark-listings-brand-logo {
+	display: block;
+	flex: 0 0 auto;
+	height: 44px;
+	max-width: 140px;
+	object-fit: contain;
+	width: auto;
+}
+
 /* Notices */
 .aomark-listings-admin .notice,
 .aomark-listings-admin div.updated,
@@ -1685,6 +1694,11 @@
 
 	.aomark-listings-brand h1 {
 		font-size: 22px;
+	}
+
+	.aomark-listings-brand-logo {
+		height: 32px;
+		max-width: 110px;
 	}
 
 	.aomark-listings-section-intro {
